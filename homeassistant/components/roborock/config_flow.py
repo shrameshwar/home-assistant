@@ -23,7 +23,7 @@ from homeassistant.config_entries import (
     SOURCE_REAUTH,
     ConfigFlow,
     ConfigFlowResult,
-    OptionsFlow,
+    OptionsFlowWithReload,
 )
 from homeassistant.const import CONF_USERNAME
 from homeassistant.core import callback
@@ -35,6 +35,7 @@ from . import RoborockConfigEntry
 from .const import (
     CONF_BASE_URL,
     CONF_ENTRY_CODE,
+    CONF_SHOW_BACKGROUND,
     CONF_USER_DATA,
     DEFAULT_DRAWABLES,
     DOMAIN,
@@ -48,6 +49,7 @@ class RoborockFlowHandler(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Roborock."""
 
     VERSION = 1
+    MINOR_VERSION = 2
 
     def __init__(self) -> None:
         """Initialize the config flow."""
@@ -62,8 +64,6 @@ class RoborockFlowHandler(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             username = user_input[CONF_USERNAME]
-            await self.async_set_unique_id(username.lower())
-            self._abort_if_unique_id_configured(error="already_configured_account")
             self._username = username
             _LOGGER.debug("Requesting code for Roborock account")
             self._client = RoborockApiClient(
@@ -111,7 +111,7 @@ class RoborockFlowHandler(ConfigFlow, domain=DOMAIN):
             code = user_input[CONF_ENTRY_CODE]
             _LOGGER.debug("Logging into Roborock account using email provided code")
             try:
-                login_data = await self._client.code_login(code)
+                user_data = await self._client.code_login(code)
             except RoborockInvalidCode:
                 errors["base"] = "invalid_code"
             except RoborockException:
@@ -121,17 +121,15 @@ class RoborockFlowHandler(ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
+                await self.async_set_unique_id(user_data.rruid)
                 if self.source == SOURCE_REAUTH:
+                    self._abort_if_unique_id_mismatch(reason="wrong_account")
                     reauth_entry = self._get_reauth_entry()
-                    self.hass.config_entries.async_update_entry(
-                        reauth_entry,
-                        data={
-                            **reauth_entry.data,
-                            CONF_USER_DATA: login_data.as_dict(),
-                        },
+                    return self.async_update_reload_and_abort(
+                        reauth_entry, data_updates={CONF_USER_DATA: user_data.as_dict()}
                     )
-                    return self.async_abort(reason="reauth_successful")
-                return self._create_entry(self._client, self._username, login_data)
+                self._abort_if_unique_id_configured(error="already_configured_account")
+                return self._create_entry(self._client, self._username, user_data)
 
         return self.async_show_form(
             step_id="code",
@@ -143,6 +141,7 @@ class RoborockFlowHandler(ConfigFlow, domain=DOMAIN):
         self, discovery_info: DhcpServiceInfo
     ) -> ConfigFlowResult:
         """Handle a flow started by a dhcp discovery."""
+        await self._async_handle_discovery_without_unique_id()
         device_registry = dr.async_get(self.hass)
         device = device_registry.async_get_device(
             connections={
@@ -199,7 +198,7 @@ class RoborockFlowHandler(ConfigFlow, domain=DOMAIN):
         return RoborockOptionsFlowHandler(config_entry)
 
 
-class RoborockOptionsFlowHandler(OptionsFlow):
+class RoborockOptionsFlowHandler(OptionsFlowWithReload):
     """Handle an option flow for Roborock."""
 
     def __init__(self, config_entry: RoborockConfigEntry) -> None:
@@ -217,6 +216,7 @@ class RoborockOptionsFlowHandler(OptionsFlow):
     ) -> ConfigFlowResult:
         """Manage the map object drawable options."""
         if user_input is not None:
+            self.options[CONF_SHOW_BACKGROUND] = user_input.pop(CONF_SHOW_BACKGROUND)
             self.options.setdefault(DRAWABLES, {}).update(user_input)
             return self.async_create_entry(title="", data=self.options)
         data_schema = {}
@@ -229,6 +229,12 @@ class RoborockOptionsFlowHandler(OptionsFlow):
                     ),
                 )
             ] = bool
+        data_schema[
+            vol.Required(
+                CONF_SHOW_BACKGROUND,
+                default=self.config_entry.options.get(CONF_SHOW_BACKGROUND, False),
+            )
+        ] = bool
         return self.async_show_form(
             step_id=DRAWABLES,
             data_schema=vol.Schema(data_schema),

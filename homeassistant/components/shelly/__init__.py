@@ -56,6 +56,11 @@ from .coordinator import (
     ShellyRpcCoordinator,
     ShellyRpcPollingCoordinator,
 )
+from .repairs import (
+    async_manage_ble_scanner_firmware_unsupported_issue,
+    async_manage_outbound_websocket_incorrectly_enabled_issue,
+    async_manage_wall_display_firmware_unsupported_issue,
+)
 from .utils import (
     async_create_issue_unsupported_firmware,
     get_coap_context,
@@ -63,6 +68,8 @@ from .utils import (
     get_http_port,
     get_rpc_scripts_event_types,
     get_ws_context,
+    remove_empty_sub_devices,
+    remove_stale_blu_trv_devices,
 )
 
 PLATFORMS: Final = [
@@ -111,6 +118,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ShellyConfigEntry) -> bool:
     """Set up Shelly from a config entry."""
+    entry.runtime_data = ShellyEntryData([])
+
     # The custom component for Shelly devices uses shelly domain as well as core
     # integration. If the user removes the custom component but doesn't remove the
     # config entry, core integration will try to configure that config entry with an
@@ -162,7 +171,8 @@ async def _async_setup_block_entry(
         device_entry = None
 
     sleep_period = entry.data.get(CONF_SLEEP_PERIOD)
-    runtime_data = entry.runtime_data = ShellyEntryData(BLOCK_SLEEPING_PLATFORMS)
+    runtime_data = entry.runtime_data
+    runtime_data.platforms = BLOCK_SLEEPING_PLATFORMS
 
     # Some old firmware have a wrong sleep period hardcoded value.
     # Following code block will force the right value for affected devices
@@ -189,13 +199,25 @@ async def _async_setup_block_entry(
             if not device.firmware_supported:
                 async_create_issue_unsupported_firmware(hass, entry)
                 await device.shutdown()
-                raise ConfigEntryNotReady
+                raise ConfigEntryNotReady(
+                    translation_domain=DOMAIN,
+                    translation_key="firmware_unsupported",
+                    translation_placeholders={"device": entry.title},
+                )
         except (DeviceConnectionError, MacAddressMismatchError) as err:
             await device.shutdown()
-            raise ConfigEntryNotReady(repr(err)) from err
+            raise ConfigEntryNotReady(
+                translation_domain=DOMAIN,
+                translation_key="device_communication_error",
+                translation_placeholders={"device": entry.title},
+            ) from err
         except InvalidAuthError as err:
             await device.shutdown()
-            raise ConfigEntryAuthFailed(repr(err)) from err
+            raise ConfigEntryAuthFailed(
+                translation_domain=DOMAIN,
+                translation_key="auth_error",
+                translation_placeholders={"device": entry.title},
+            ) from err
 
         runtime_data.block = ShellyBlockCoordinator(hass, entry, device)
         runtime_data.block.async_setup()
@@ -203,6 +225,7 @@ async def _async_setup_block_entry(
         await hass.config_entries.async_forward_entry_setups(
             entry, runtime_data.platforms
         )
+        remove_empty_sub_devices(hass, entry)
     elif (
         sleep_period is None
         or device_entry is None
@@ -261,7 +284,8 @@ async def _async_setup_rpc_entry(hass: HomeAssistant, entry: ShellyConfigEntry) 
         device_entry = None
 
     sleep_period = entry.data.get(CONF_SLEEP_PERIOD)
-    runtime_data = entry.runtime_data = ShellyEntryData(RPC_SLEEPING_PLATFORMS)
+    runtime_data = entry.runtime_data
+    runtime_data.platforms = RPC_SLEEPING_PLATFORMS
 
     if sleep_period == 0:
         # Not a sleeping device, finish setup
@@ -272,16 +296,32 @@ async def _async_setup_rpc_entry(hass: HomeAssistant, entry: ShellyConfigEntry) 
             if not device.firmware_supported:
                 async_create_issue_unsupported_firmware(hass, entry)
                 await device.shutdown()
-                raise ConfigEntryNotReady
-            runtime_data.rpc_script_events = await get_rpc_scripts_event_types(
-                device, ignore_scripts=[BLE_SCRIPT_NAME]
-            )
+                raise ConfigEntryNotReady(
+                    translation_domain=DOMAIN,
+                    translation_key="firmware_unsupported",
+                    translation_placeholders={"device": entry.title},
+                )
+            runtime_data.rpc_zigbee_firmware = device.zigbee_firmware
+            runtime_data.rpc_supports_scripts = await device.supports_scripts()
+            if runtime_data.rpc_supports_scripts:
+                runtime_data.rpc_script_events = await get_rpc_scripts_event_types(
+                    device, ignore_scripts=[BLE_SCRIPT_NAME]
+                )
+            remove_stale_blu_trv_devices(hass, device, entry)
         except (DeviceConnectionError, MacAddressMismatchError, RpcCallError) as err:
             await device.shutdown()
-            raise ConfigEntryNotReady(repr(err)) from err
+            raise ConfigEntryNotReady(
+                translation_domain=DOMAIN,
+                translation_key="device_communication_error",
+                translation_placeholders={"device": entry.title},
+            ) from err
         except InvalidAuthError as err:
             await device.shutdown()
-            raise ConfigEntryAuthFailed(repr(err)) from err
+            raise ConfigEntryAuthFailed(
+                translation_domain=DOMAIN,
+                translation_key="auth_error",
+                translation_placeholders={"device": entry.title},
+            ) from err
 
         runtime_data.rpc = ShellyRpcCoordinator(hass, entry, device)
         runtime_data.rpc.async_setup()
@@ -289,6 +329,16 @@ async def _async_setup_rpc_entry(hass: HomeAssistant, entry: ShellyConfigEntry) 
         await hass.config_entries.async_forward_entry_setups(
             entry, runtime_data.platforms
         )
+        async_manage_wall_display_firmware_unsupported_issue(hass, entry)
+        async_manage_ble_scanner_firmware_unsupported_issue(
+            hass,
+            entry,
+        )
+        async_manage_outbound_websocket_incorrectly_enabled_issue(
+            hass,
+            entry,
+        )
+        remove_empty_sub_devices(hass, entry)
     elif (
         sleep_period is None
         or device_entry is None

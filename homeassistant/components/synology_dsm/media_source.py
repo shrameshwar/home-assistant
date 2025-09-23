@@ -10,9 +10,8 @@ from synology_dsm.api.photos import SynoPhotosAlbum, SynoPhotosItem
 from synology_dsm.exceptions import SynologyDSMException
 
 from homeassistant.components import http
-from homeassistant.components.media_player import MediaClass
+from homeassistant.components.media_player import BrowseError, MediaClass
 from homeassistant.components.media_source import (
-    BrowseError,
     BrowseMediaSource,
     MediaSource,
     MediaSourceItem,
@@ -145,6 +144,17 @@ class SynologyPhotosMediaSource(MediaSource):
                     can_expand=True,
                 )
             ]
+            ret += [
+                BrowseMediaSource(
+                    domain=DOMAIN,
+                    identifier=f"{item.identifier}/shared",
+                    media_class=MediaClass.DIRECTORY,
+                    media_content_type=MediaClass.IMAGE,
+                    title="Shared space",
+                    can_play=False,
+                    can_expand=True,
+                )
+            ]
             ret.extend(
                 BrowseMediaSource(
                     domain=DOMAIN,
@@ -162,13 +172,24 @@ class SynologyPhotosMediaSource(MediaSource):
 
         # Request items of album
         # Get Items
-        album = SynoPhotosAlbum(int(identifier.album_id), "", 0, identifier.passphrase)
-        try:
-            album_items = await diskstation.api.photos.get_items_from_album(
-                album, 0, 1000
+        if identifier.album_id == "shared":
+            # Get items from shared space
+            try:
+                album_items = await diskstation.api.photos.get_items_from_shared_space(
+                    0, 1000
+                )
+            except SynologyDSMException:
+                return []
+        else:
+            album = SynoPhotosAlbum(
+                int(identifier.album_id), "", 0, identifier.passphrase
             )
-        except SynologyDSMException:
-            return []
+            try:
+                album_items = await diskstation.api.photos.get_items_from_album(
+                    album, 0, 1000
+                )
+            except SynologyDSMException:
+                return []
         assert album_items is not None
 
         ret = []
