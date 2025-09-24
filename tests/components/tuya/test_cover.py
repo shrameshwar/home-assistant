@@ -365,7 +365,7 @@ async def test_cl_lfkr93x0ukp5gaia_state(
     """Test cover position for lfkr93x0ukp5gaia device.
 
     See https://github.com/home-assistant/core/issues/152826
-    percent_control / percent_state / situation_set are identical, regardless
+    percent_control / percent_state / situation_set never change, regardless
     of open or closed state
     """
     entity_id = "cover.projector_screen_curtain"
