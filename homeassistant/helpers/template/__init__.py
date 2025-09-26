@@ -1534,7 +1534,7 @@ def area_devices(hass: HomeAssistant, area_id_or_name: str) -> Iterable[str]:
     return [entry.id for entry in entries]
 
 
-def area_temperature(hass: HomeAssistant, area_id_or_name: str) -> str | None:
+def area_temperature_sensor(hass: HomeAssistant, area_id_or_name: str) -> str | None:
     """Return the temperature sensor ID for a given area ID or name."""
     _area_id: str | None
     # if area_name returns a value, we know the input was an ID, otherwise we
@@ -1550,7 +1550,7 @@ def area_temperature(hass: HomeAssistant, area_id_or_name: str) -> str | None:
     return area_entry.temperature_entity_id
 
 
-def area_humidity(hass: HomeAssistant, area_id_or_name: str) -> str | None:
+def area_humidity_sensor(hass: HomeAssistant, area_id_or_name: str) -> str | None:
     """Return the humidity sensor ID for a given area ID or name."""
     _area_id: str | None
     # if area_name returns a value, we know the input was an ID, otherwise we
@@ -2608,11 +2608,13 @@ class TemplateEnvironment(ImmutableSandboxedEnvironment):
         self.globals["area_devices"] = hassfunction(area_devices)
         self.filters["area_devices"] = self.globals["area_devices"]
 
-        self.globals["area_temperature"] = hassfunction(area_temperature)
-        self.filters["area_temperature"] = self.globals["area_temperature"]
+        self.globals["area_temperature_sensor"] = hassfunction(area_temperature_sensor)
+        self.filters["area_temperature_sensor"] = self.globals[
+            "area_temperature_sensor"
+        ]
 
-        self.globals["area_humidity"] = hassfunction(area_humidity)
-        self.filters["area_humidity"] = self.globals["area_humidity"]
+        self.globals["area_humidity_sensor"] = hassfunction(area_humidity_sensor)
+        self.filters["area_humidity_sensor"] = self.globals["area_humidity_sensor"]
 
         # Floor extensions
 
