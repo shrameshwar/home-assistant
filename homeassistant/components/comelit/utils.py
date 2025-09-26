@@ -124,5 +124,5 @@ def list_new_devices(
     new_devices = current_devices - known_devices
     if new_devices:
         known_devices.update(new_devices)
-        return [device.index for device in data.values() if device.index in new_devices]
+        return list(new_devices)
     return []
