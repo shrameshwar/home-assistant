@@ -32,7 +32,7 @@
         "name": "Sensor delay"
       },
       "water_hammer_duration": {
-        "name": "Water hammer duration"
+        "name": "Water hammer reduction"
       },
       "region": {
         "name": "Region"
