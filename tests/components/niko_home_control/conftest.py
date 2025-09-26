@@ -100,6 +100,7 @@ def mock_niko_home_control_connection(
         client.lights = [light, dimmable_light]
         client.covers = [cover]
         client.thermostats = {"thermostat-5": climate}
+        client.connect = AsyncMock(return_value=True)
         yield client
 
 

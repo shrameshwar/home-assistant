@@ -34,13 +34,21 @@ from homeassistant.components.sonos.const import (
 )
 from homeassistant.components.sonos.media_player import (
     LONG_SERVICE_TIMEOUT,
+    VOLUME_INCREMENT,
+)
+from homeassistant.components.sonos.services import (
+    ATTR_ALARM_ID,
+    ATTR_ENABLED,
+    ATTR_INCLUDE_LINKED_ZONES,
+    ATTR_VOLUME,
     SERVICE_GET_QUEUE,
     SERVICE_RESTORE,
     SERVICE_SNAPSHOT,
-    VOLUME_INCREMENT,
+    SERVICE_UPDATE_ALARM,
 )
 from homeassistant.const import (
     ATTR_ENTITY_ID,
+    ATTR_TIME,
     SERVICE_MEDIA_NEXT_TRACK,
     SERVICE_MEDIA_PAUSE,
     SERVICE_MEDIA_PLAY,
@@ -407,6 +415,7 @@ async def test_play_media_lib_track_add(
 
 
 _share_link: str = "spotify:playlist:abcdefghij0123456789XY"
+_share_link_title: str = "playlist title"
 
 
 async def test_play_media_share_link_add(
@@ -424,6 +433,7 @@ async def test_play_media_share_link_add(
             ATTR_MEDIA_CONTENT_TYPE: "playlist",
             ATTR_MEDIA_CONTENT_ID: _share_link,
             ATTR_MEDIA_ENQUEUE: MediaPlayerEnqueue.ADD,
+            ATTR_MEDIA_EXTRA: {"title": _share_link_title},
         },
         blocking=True,
     )
@@ -434,6 +444,10 @@ async def test_play_media_share_link_add(
     assert (
         soco_sharelink.add_share_link_to_queue.call_args_list[0].kwargs["timeout"]
         == LONG_SERVICE_TIMEOUT
+    )
+    assert (
+        soco_sharelink.add_share_link_to_queue.call_args_list[0].kwargs["dc_title"]
+        == _share_link_title
     )
 
 
@@ -465,6 +479,10 @@ async def test_play_media_share_link_next(
     )
     assert (
         soco_sharelink.add_share_link_to_queue.call_args_list[0].kwargs["position"] == 1
+    )
+    assert (
+        "dc_title"
+        not in soco_sharelink.add_share_link_to_queue.call_args_list[0].kwargs
     )
 
 
@@ -1095,11 +1113,11 @@ async def test_volume(
     await hass.services.async_call(
         MP_DOMAIN,
         SERVICE_VOLUME_SET,
-        {ATTR_ENTITY_ID: "media_player.zone_a", ATTR_MEDIA_VOLUME_LEVEL: 0.30},
+        {ATTR_ENTITY_ID: "media_player.zone_a", ATTR_MEDIA_VOLUME_LEVEL: 0.57},
         blocking=True,
     )
     # SoCo uses 0..100 for its range.
-    assert soco.volume == 30
+    assert soco.volume == 57
 
 
 @pytest.mark.parametrize(
@@ -1265,3 +1283,67 @@ async def test_media_source_list(
     """Test the mapping between the speaker model name and source_list."""
     state = hass.states.get("media_player.zone_a")
     assert state.attributes.get(ATTR_INPUT_SOURCE_LIST) == source_list
+
+
+async def test_service_update_alarm(
+    hass: HomeAssistant,
+    soco: MockSoCo,
+    async_autosetup_sonos,
+) -> None:
+    """Test updating an alarm."""
+
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_UPDATE_ALARM,
+        {
+            ATTR_ENTITY_ID: "media_player.zone_a",
+            ATTR_ALARM_ID: 14,
+            ATTR_TIME: "07:15:00",
+            ATTR_VOLUME: 0.25,
+            ATTR_INCLUDE_LINKED_ZONES: True,
+            ATTR_ENABLED: True,
+        },
+        blocking=True,
+    )
+
+    assert soco.alarmClock.UpdateAlarm.call_count == 1
+    assert soco.alarmClock.UpdateAlarm.call_args.args[0] == [
+        ("ID", "14"),
+        ("StartLocalTime", "07:15:00"),
+        ("Duration", "02:00:00"),
+        ("Recurrence", "DAILY"),
+        ("Enabled", "1"),
+        ("RoomUUID", "RINCON_test"),
+        ("ProgramURI", "x-rincon-buzzer:0"),
+        ("ProgramMetaData", ""),
+        ("PlayMode", "SHUFFLE_NOREPEAT"),
+        ("Volume", 25),
+        ("IncludeLinkedZones", "1"),
+    ]
+
+
+async def test_service_update_alarm_dne(
+    hass: HomeAssistant,
+    soco: MockSoCo,
+    async_autosetup_sonos,
+) -> None:
+    """Test updating an alarm that does not exist."""
+
+    with pytest.raises(
+        ServiceValidationError,
+        match="Alarm 99 does not exist and cannot be updated",
+    ):
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_UPDATE_ALARM,
+            {
+                ATTR_ENTITY_ID: "media_player.zone_a",
+                ATTR_ALARM_ID: 99,
+                ATTR_TIME: "07:15:00",
+                ATTR_VOLUME: 0.25,
+                ATTR_INCLUDE_LINKED_ZONES: True,
+                ATTR_ENABLED: True,
+            },
+            blocking=True,
+        )
+    assert soco.alarmClock.UpdateAlarm.call_count == 0
