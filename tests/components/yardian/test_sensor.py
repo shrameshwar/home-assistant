@@ -79,7 +79,7 @@ async def test_sensor_states(hass: HomeAssistant) -> None:
 
     ent_reg = er.async_get(hass)
 
-    rain_id = ent_reg.async_get_entity_id("sensor", DOMAIN, "yid123-rain-delay")
+    rain_id = ent_reg.async_get_entity_id("sensor", DOMAIN, "yid123_rain-delay")
     assert rain_id is not None
     rain_state = hass.states.get(rain_id)
     assert rain_state is not None
@@ -88,7 +88,7 @@ async def test_sensor_states(hass: HomeAssistant) -> None:
     assert rain_state.attributes.get("unit_of_measurement") == "s"
 
     zone_count_id = ent_reg.async_get_entity_id(
-        "sensor", DOMAIN, "yid123-active-zone-count"
+        "sensor", DOMAIN, "yid123_active-zone-count"
     )
     assert zone_count_id is not None
     zone_count_state = hass.states.get(zone_count_id)
@@ -123,9 +123,9 @@ async def test_diagnostic_sensors(hass: HomeAssistant) -> None:
     ent_reg = er.async_get(hass)
 
     diag_sensor_uids = (
-        "yid123-sensor-delay",
-        "yid123-water-hammer-duration",
-        "yid123-region",
+        "yid123_sensor-delay",
+        "yid123_water-hammer-duration",
+        "yid123_region",
     )
 
     for uid in diag_sensor_uids:
@@ -157,7 +157,7 @@ async def test_diagnostic_sensors(hass: HomeAssistant) -> None:
         assert state is not None
 
     sensor_delay = hass.states.get(
-        ent_reg.async_get_entity_id("sensor", DOMAIN, "yid123-sensor-delay")
+        ent_reg.async_get_entity_id("sensor", DOMAIN, "yid123_sensor-delay")
     )
     assert sensor_delay is not None
     assert sensor_delay.state == "5"
@@ -165,7 +165,7 @@ async def test_diagnostic_sensors(hass: HomeAssistant) -> None:
     assert sensor_delay.attributes.get("unit_of_measurement") == "s"
 
     water_hammer = hass.states.get(
-        ent_reg.async_get_entity_id("sensor", DOMAIN, "yid123-water-hammer-duration")
+        ent_reg.async_get_entity_id("sensor", DOMAIN, "yid123_water-hammer-duration")
     )
     assert water_hammer is not None
     assert water_hammer.state == "2"
@@ -173,7 +173,7 @@ async def test_diagnostic_sensors(hass: HomeAssistant) -> None:
     assert water_hammer.attributes.get("unit_of_measurement") == "s"
 
     region = hass.states.get(
-        ent_reg.async_get_entity_id("sensor", DOMAIN, "yid123-region")
+        ent_reg.async_get_entity_id("sensor", DOMAIN, "yid123_region")
     )
     assert region is not None
     assert region.state == "US"

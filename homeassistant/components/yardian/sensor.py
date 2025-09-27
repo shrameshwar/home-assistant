@@ -2,20 +2,121 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
+
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
+    SensorEntityDescription,
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .coordinator import YardianUpdateCoordinator
+
+
+@dataclass(kw_only=True, frozen=True)
+class YardianSensorEntityDescription(SensorEntityDescription):
+    """Entity description for Yardian sensors."""
+
+    unique_id_suffix: str
+    value_fn: Callable[[YardianUpdateCoordinator], StateType]
+
+
+def _rain_delay_value(coordinator: YardianUpdateCoordinator) -> StateType:
+    """Return remaining rain delay in seconds."""
+    val = coordinator.data.oper_info.get("iRainDelay")
+    if isinstance(val, int):
+        return max(0, val)
+    return None
+
+
+def _active_zone_count_value(coordinator: YardianUpdateCoordinator) -> StateType:
+    """Return number of active zones."""
+    return len(coordinator.data.active_zones)
+
+
+def _sensor_delay_value(coordinator: YardianUpdateCoordinator) -> StateType:
+    """Return sensor delay duration in seconds."""
+    val = coordinator.data.oper_info.get("iSensorDelay")
+    if isinstance(val, int):
+        if val > 365 * 24 * 3600:
+            now = int(dt_util.utcnow().timestamp())
+            return max(0, val - now)
+        return max(0, val)
+    return None
+
+
+def _water_hammer_duration_value(coordinator: YardianUpdateCoordinator) -> StateType:
+    """Return water hammer duration in seconds."""
+    val = coordinator.data.oper_info.get("iWaterHammerDuration")
+    if isinstance(val, int):
+        return val
+    return None
+
+
+def _region_value(coordinator: YardianUpdateCoordinator) -> StateType:
+    """Return controller region label."""
+    val = coordinator.data.oper_info.get("region")
+    if isinstance(val, str) and val:
+        return val
+    return None
+
+
+SENSOR_DESCRIPTIONS: tuple[YardianSensorEntityDescription, ...] = (
+    YardianSensorEntityDescription(
+        key="rain_delay",
+        translation_key="rain_delay",
+        unique_id_suffix="rain-delay",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement="s",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=_rain_delay_value,
+    ),
+    YardianSensorEntityDescription(
+        key="active_zone_count",
+        translation_key="active_zone_count",
+        unique_id_suffix="active-zone-count",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=_active_zone_count_value,
+    ),
+    YardianSensorEntityDescription(
+        key="sensor_delay",
+        translation_key="sensor_delay",
+        unique_id_suffix="sensor-delay",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement="s",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=_sensor_delay_value,
+    ),
+    YardianSensorEntityDescription(
+        key="water_hammer_duration",
+        translation_key="water_hammer_duration",
+        unique_id_suffix="water-hammer-duration",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement="s",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=_water_hammer_duration_value,
+    ),
+    YardianSensorEntityDescription(
+        key="region",
+        translation_key="region",
+        unique_id_suffix="region",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=_region_value,
+    ),
+)
 
 
 async def async_setup_entry(
@@ -26,137 +127,29 @@ async def async_setup_entry(
     """Set up Yardian sensors."""
     coordinator: YardianUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
-    entities: list[SensorEntity] = [
-        YardianRainDelaySensor(coordinator),
-        YardianActiveZoneCountSensor(coordinator),
-        YardianSensorDelaySensor(coordinator),
-        YardianWaterHammerDurationSensor(coordinator),
-        YardianRegionSensor(coordinator),
-    ]
-
-    async_add_entities(entities)
+    async_add_entities(
+        YardianSensor(coordinator, description) for description in SENSOR_DESCRIPTIONS
+    )
 
 
-class _BaseYardianSensor(CoordinatorEntity[YardianUpdateCoordinator], SensorEntity):
+class YardianSensor(CoordinatorEntity[YardianUpdateCoordinator], SensorEntity):
+    """Representation of a Yardian sensor defined by description."""
+
+    entity_description: YardianSensorEntityDescription
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator: YardianUpdateCoordinator) -> None:
+    def __init__(
+        self,
+        coordinator: YardianUpdateCoordinator,
+        description: YardianSensorEntityDescription,
+    ) -> None:
+        """Initialize the Yardian sensor."""
         super().__init__(coordinator)
+        self.entity_description = description
+        self._attr_unique_id = f"{coordinator.yid}_{description.unique_id_suffix}"
         self._attr_device_info = coordinator.device_info
 
-
-class YardianRainDelaySensor(_BaseYardianSensor):
-    """Remaining rain delay in seconds."""
-
-    _attr_translation_key = "rain_delay"
-    _attr_device_class = SensorDeviceClass.DURATION
-    _attr_native_unit_of_measurement = "s"
-    _attr_state_class = SensorStateClass.MEASUREMENT
-
-    def __init__(self, coordinator: YardianUpdateCoordinator) -> None:
-        """Initialize the rain delay sensor."""
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.yid}-rain-delay"
-
     @property
-    def native_value(self) -> int | None:
-        """Return remaining rain delay in seconds."""
-        val = self.coordinator.data.oper_info.get("iRainDelay")
-        if isinstance(val, int):
-            # Some devices report negative remaining time; clamp to 0
-            return max(0, val)
-        return None
-
-
-class YardianActiveZoneCountSensor(_BaseYardianSensor):
-    """Number of zones currently running."""
-
-    _attr_translation_key = "active_zone_count"
-    _attr_state_class = SensorStateClass.MEASUREMENT
-
-    def __init__(self, coordinator: YardianUpdateCoordinator) -> None:
-        """Initialize the active zone count sensor."""
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.yid}-active-zone-count"
-
-    @property
-    def native_value(self) -> int:
-        """Return number of currently active zones."""
-        return len(self.coordinator.data.active_zones)
-
-
-class YardianSensorDelaySensor(_BaseYardianSensor):
-    """Sensor delay duration in seconds (diagnostic)."""
-
-    _attr_translation_key = "sensor_delay"
-    _attr_device_class = SensorDeviceClass.DURATION
-    _attr_native_unit_of_measurement = "s"
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_entity_registry_enabled_default = False
-
-    def __init__(self, coordinator: YardianUpdateCoordinator) -> None:
-        """Initialize the sensor delay diagnostic sensor."""
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.yid}-sensor-delay"
-
-    @property
-    def native_value(self) -> int | None:
-        """Return sensor delay in seconds.
-
-        Some firmware reports an absolute Unix timestamp for when the sensor
-        delay ends. If the value looks like a timestamp (far in the future),
-        convert to remaining seconds; otherwise treat it as a duration.
-        """
-        val = self.coordinator.data.oper_info.get("iSensorDelay")
-        if isinstance(val, int):
-            # Heuristic: values larger than ~1 year are treated as epoch seconds
-            if val > 365 * 24 * 3600:
-                now = int(dt_util.utcnow().timestamp())
-                return max(0, val - now)
-            # Otherwise, treat as seconds duration
-            return max(0, val)
-        return None
-
-
-class YardianWaterHammerDurationSensor(_BaseYardianSensor):
-    """Water hammer duration in seconds (diagnostic)."""
-
-    _attr_translation_key = "water_hammer_duration"
-    _attr_device_class = SensorDeviceClass.DURATION
-    _attr_native_unit_of_measurement = "s"
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_entity_registry_enabled_default = False
-
-    def __init__(self, coordinator: YardianUpdateCoordinator) -> None:
-        """Initialize the water hammer duration diagnostic sensor."""
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.yid}-water-hammer-duration"
-
-    @property
-    def native_value(self) -> int | None:
-        """Return water hammer protection duration in seconds."""
-        val = self.coordinator.data.oper_info.get("iWaterHammerDuration")
-        if isinstance(val, int):
-            return val
-        return None
-
-
-class YardianRegionSensor(_BaseYardianSensor):
-    """Region text (diagnostic)."""
-
-    _attr_translation_key = "region"
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_entity_registry_enabled_default = False
-
-    def __init__(self, coordinator: YardianUpdateCoordinator) -> None:
-        """Initialize the region diagnostic sensor."""
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.yid}-region"
-
-    @property
-    def native_value(self) -> str | None:
-        """Return the controller region label."""
-        val = self.coordinator.data.oper_info.get("region")
-        if isinstance(val, str) and val:
-            return val
-        return None
+    def native_value(self) -> StateType:
+        """Return the value provided by the description."""
+        return self.entity_description.value_fn(self.coordinator)
