@@ -33,7 +33,11 @@ class YardianSensorEntityDescription(SensorEntityDescription):
 
 def _rain_delay_value(coordinator: YardianUpdateCoordinator) -> StateType:
     """Return remaining rain delay in seconds."""
-    val = coordinator.data.oper_info.get("iRainDelay")
+    state = coordinator.data
+    if state is None:
+        return None
+    oper_info = getattr(state, "oper_info", {}) or {}
+    val = oper_info.get("iRainDelay")
     if isinstance(val, int):
         return max(0, val)
     return None
@@ -41,12 +45,19 @@ def _rain_delay_value(coordinator: YardianUpdateCoordinator) -> StateType:
 
 def _active_zone_count_value(coordinator: YardianUpdateCoordinator) -> StateType:
     """Return number of active zones."""
-    return len(coordinator.data.active_zones)
+    state = coordinator.data
+    if state is None:
+        return None
+    return len(state.active_zones)
 
 
 def _sensor_delay_value(coordinator: YardianUpdateCoordinator) -> StateType:
     """Return sensor delay duration in seconds."""
-    val = coordinator.data.oper_info.get("iSensorDelay")
+    state = coordinator.data
+    if state is None:
+        return None
+    oper_info = getattr(state, "oper_info", {}) or {}
+    val = oper_info.get("iSensorDelay")
     if isinstance(val, int):
         if val > 365 * 24 * 3600:
             now = int(dt_util.utcnow().timestamp())
@@ -57,7 +68,11 @@ def _sensor_delay_value(coordinator: YardianUpdateCoordinator) -> StateType:
 
 def _water_hammer_duration_value(coordinator: YardianUpdateCoordinator) -> StateType:
     """Return water hammer duration in seconds."""
-    val = coordinator.data.oper_info.get("iWaterHammerDuration")
+    state = coordinator.data
+    if state is None:
+        return None
+    oper_info = getattr(state, "oper_info", {}) or {}
+    val = oper_info.get("iWaterHammerDuration")
     if isinstance(val, int):
         return val
     return None
@@ -65,7 +80,11 @@ def _water_hammer_duration_value(coordinator: YardianUpdateCoordinator) -> State
 
 def _region_value(coordinator: YardianUpdateCoordinator) -> StateType:
     """Return controller region label."""
-    val = coordinator.data.oper_info.get("region")
+    state = coordinator.data
+    if state is None:
+        return None
+    oper_info = getattr(state, "oper_info", {}) or {}
+    val = oper_info.get("region")
     if isinstance(val, str) and val:
         return val
     return None
