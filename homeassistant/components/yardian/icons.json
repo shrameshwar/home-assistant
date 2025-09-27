@@ -12,8 +12,8 @@
       "active_zone_count": {
         "default": "mdi:counter"
       },
-      "sensor_delay": {
-        "default": "mdi:timer-sand"
+      "zone_delay": {
+        "default": "mdi:timer-pause"
       },
       "water_hammer_duration": {
         "default": "mdi:hammer"

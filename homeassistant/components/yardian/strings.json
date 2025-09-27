@@ -28,8 +28,8 @@
       "active_zone_count": {
         "name": "Active zone count"
       },
-      "sensor_delay": {
-        "name": "Sensor delay"
+      "zone_delay": {
+        "name": "Zone delay"
       },
       "water_hammer_duration": {
         "name": "Water hammer reduction"

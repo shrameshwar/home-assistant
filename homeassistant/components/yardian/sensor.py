@@ -51,8 +51,8 @@ def _active_zone_count_value(coordinator: YardianUpdateCoordinator) -> StateType
     return len(state.active_zones)
 
 
-def _sensor_delay_value(coordinator: YardianUpdateCoordinator) -> StateType:
-    """Return sensor delay duration in seconds."""
+def _zone_delay_value(coordinator: YardianUpdateCoordinator) -> StateType:
+    """Return zone delay duration in seconds."""
     state = coordinator.data
     if state is None:
         return None
@@ -108,14 +108,14 @@ SENSOR_DESCRIPTIONS: tuple[YardianSensorEntityDescription, ...] = (
         value_fn=_active_zone_count_value,
     ),
     YardianSensorEntityDescription(
-        key="sensor_delay",
-        translation_key="sensor_delay",
+        key="zone_delay",
+        translation_key="zone_delay",
         unique_id_suffix="sensor-delay",
         device_class=SensorDeviceClass.DURATION,
         native_unit_of_measurement="s",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
-        value_fn=_sensor_delay_value,
+        value_fn=_zone_delay_value,
     ),
     YardianSensorEntityDescription(
         key="water_hammer_duration",
