@@ -91,6 +91,11 @@ _GALLON_TO_CUBIC_METER = 231 * pow(_IN_TO_M, 3)  # US gallon is 231 cubic inches
 _FLUID_OUNCE_TO_CUBIC_METER = _GALLON_TO_CUBIC_METER / 128  # 128 fl. oz. in a US gallon
 _CUBIC_FOOT_TO_CUBIC_METER = pow(_FOOT_TO_M, 3)
 
+# Concentration conversion constants
+# concentration (mg/m3) = 0.0409 x concentration (ppm) x molecular weight of chemical
+# Carbon monoxide molecular weight: 28.01 g/mol
+_PPM_TO_MG_PER_M3_CARBON_MONOXIDE = 0.0409 * 28.01
+
 
 class BaseUnitConverter:
     """Define the format of a conversion utility."""
@@ -174,13 +179,14 @@ class CarbonMonoxideConcentrationConverter(BaseUnitConverter):
     UNIT_CLASS = "carbon_monoxide"
     _UNIT_CONVERSION: dict[str | None, float] = {
         CONCENTRATION_PARTS_PER_MILLION: 1,
-        # concentration (mg/m3) = 0.0409 x concentration (ppm) x molecular weight
-        # Carbon monoxide molecular weight: 28.01 g/mol
-        CONCENTRATION_MILLIGRAMS_PER_CUBIC_METER: 0.0409 * 28.01,
+        CONCENTRATION_MILLIGRAMS_PER_CUBIC_METER: _PPM_TO_MG_PER_M3_CARBON_MONOXIDE,
+        CONCENTRATION_MICROGRAMS_PER_CUBIC_METER: _PPM_TO_MG_PER_M3_CARBON_MONOXIDE
+        * 1e3,
     }
     VALID_UNITS = {
         CONCENTRATION_PARTS_PER_MILLION,
         CONCENTRATION_MILLIGRAMS_PER_CUBIC_METER,
+        CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     }
 
 
