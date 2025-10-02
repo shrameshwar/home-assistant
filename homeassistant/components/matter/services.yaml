@@ -1,0 +1,15 @@
+# Service descriptions for Matter integration
+
+get_areas:
+  target:
+    entity:
+      domain: matter
+
+clean_areas:
+  target:
+    entity:
+      domain: matter
+  fields:
+    areas:
+      required: true
+      example: [1, 3]
