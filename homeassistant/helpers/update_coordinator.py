@@ -120,7 +120,7 @@ class DataUpdateCoordinator(BaseDataUpdateCoordinatorProtocol, Generic[_DataT]):
         self._unsub_shutdown: CALLBACK_TYPE | None = None
         self._request_refresh_task: asyncio.TimerHandle | None = None
         self.last_update_success = True
-        self.last_exception: Exception | None = None
+        self.last_exception: BaseException | None = None
 
         if request_refresh_debouncer is None:
             request_refresh_debouncer = Debouncer(
