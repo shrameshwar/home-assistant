@@ -1,4 +1,193 @@
 # serializer version: 1
+# name: test_events[aqara_w100][event.climate_sensor_w100_button_bottom_three-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': set({
+    }),
+    'area_id': None,
+    'capabilities': dict({
+      'event_types': list([
+        'multi_press_1',
+        'multi_press_2',
+        'long_press',
+        'long_release',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'event',
+    'entity_category': None,
+    'entity_id': 'event.climate_sensor_w100_button_bottom_three',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'options': dict({
+    }),
+    'original_device_class': <EventDeviceClass.BUTTON: 'button'>,
+    'original_icon': None,
+    'original_name': 'Button (Bottom, Three)',
+    'platform': 'matter',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'button',
+    'unique_id': '00000000000004D2-000000000000004B-MatterNodeDevice-5-GenericSwitch-59-1',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_events[aqara_w100][event.climate_sensor_w100_button_bottom_three-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      'device_class': 'button',
+      'event_type': None,
+      'event_types': list([
+        'multi_press_1',
+        'multi_press_2',
+        'long_press',
+        'long_release',
+      ]),
+      'friendly_name': 'Climate Sensor W100 Button (Bottom, Three)',
+    }),
+    'context': <ANY>,
+    'entity_id': 'event.climate_sensor_w100_button_bottom_three',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_events[aqara_w100][event.climate_sensor_w100_button_middle_two-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': set({
+    }),
+    'area_id': None,
+    'capabilities': dict({
+      'event_types': list([
+        'multi_press_1',
+        'multi_press_2',
+        'long_press',
+        'long_release',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'event',
+    'entity_category': None,
+    'entity_id': 'event.climate_sensor_w100_button_middle_two',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'options': dict({
+    }),
+    'original_device_class': <EventDeviceClass.BUTTON: 'button'>,
+    'original_icon': None,
+    'original_name': 'Button (Middle, Two)',
+    'platform': 'matter',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'button',
+    'unique_id': '00000000000004D2-000000000000004B-MatterNodeDevice-4-GenericSwitch-59-1',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_events[aqara_w100][event.climate_sensor_w100_button_middle_two-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      'device_class': 'button',
+      'event_type': None,
+      'event_types': list([
+        'multi_press_1',
+        'multi_press_2',
+        'long_press',
+        'long_release',
+      ]),
+      'friendly_name': 'Climate Sensor W100 Button (Middle, Two)',
+    }),
+    'context': <ANY>,
+    'entity_id': 'event.climate_sensor_w100_button_middle_two',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_events[aqara_w100][event.climate_sensor_w100_button_top_one-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': set({
+    }),
+    'area_id': None,
+    'capabilities': dict({
+      'event_types': list([
+        'multi_press_1',
+        'multi_press_2',
+        'long_press',
+        'long_release',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'event',
+    'entity_category': None,
+    'entity_id': 'event.climate_sensor_w100_button_top_one',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'options': dict({
+    }),
+    'original_device_class': <EventDeviceClass.BUTTON: 'button'>,
+    'original_icon': None,
+    'original_name': 'Button (Top, One)',
+    'platform': 'matter',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'button',
+    'unique_id': '00000000000004D2-000000000000004B-MatterNodeDevice-3-GenericSwitch-59-1',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_events[aqara_w100][event.climate_sensor_w100_button_top_one-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      'device_class': 'button',
+      'event_type': None,
+      'event_types': list([
+        'multi_press_1',
+        'multi_press_2',
+        'long_press',
+        'long_release',
+      ]),
+      'friendly_name': 'Climate Sensor W100 Button (Top, One)',
+    }),
+    'context': <ANY>,
+    'entity_id': 'event.climate_sensor_w100_button_top_one',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_events[generic_switch][event.mock_generic_switch_button-entry]
   EntityRegistryEntrySnapshot({
     'aliases': set({
@@ -125,7 +314,7 @@
     'state': 'unknown',
   })
 # ---
-# name: test_events[generic_switch_multi][event.mock_generic_switch_fancy_button-entry]
+# name: test_events[generic_switch_multi][event.mock_generic_switch_button_fancy_button-entry]
   EntityRegistryEntrySnapshot({
     'aliases': set({
     }),
@@ -147,7 +336,7 @@
     'disabled_by': None,
     'domain': 'event',
     'entity_category': None,
-    'entity_id': 'event.mock_generic_switch_fancy_button',
+    'entity_id': 'event.mock_generic_switch_button_fancy_button',
     'has_entity_name': True,
     'hidden_by': None,
     'icon': None,
@@ -159,7 +348,7 @@
     }),
     'original_device_class': <EventDeviceClass.BUTTON: 'button'>,
     'original_icon': None,
-    'original_name': 'Fancy Button',
+    'original_name': 'Button (Fancy Button)',
     'platform': 'matter',
     'previous_unique_id': None,
     'suggested_object_id': None,
@@ -169,7 +358,7 @@
     'unit_of_measurement': None,
   })
 # ---
-# name: test_events[generic_switch_multi][event.mock_generic_switch_fancy_button-state]
+# name: test_events[generic_switch_multi][event.mock_generic_switch_button_fancy_button-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
       'device_class': 'button',
@@ -182,17 +371,17 @@
         'long_press',
         'long_release',
       ]),
-      'friendly_name': 'Mock Generic Switch Fancy Button',
+      'friendly_name': 'Mock Generic Switch Button (Fancy Button)',
     }),
     'context': <ANY>,
-    'entity_id': 'event.mock_generic_switch_fancy_button',
+    'entity_id': 'event.mock_generic_switch_button_fancy_button',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
     'state': 'unknown',
   })
 # ---
-# name: test_events[multi_endpoint_light][event.inovelli_config-entry]
+# name: test_events[multi_endpoint_light][event.inovelli_button_config-entry]
   EntityRegistryEntrySnapshot({
     'aliases': set({
     }),
@@ -215,7 +404,7 @@
     'disabled_by': None,
     'domain': 'event',
     'entity_category': None,
-    'entity_id': 'event.inovelli_config',
+    'entity_id': 'event.inovelli_button_config',
     'has_entity_name': True,
     'hidden_by': None,
     'icon': None,
@@ -227,7 +416,7 @@
     }),
     'original_device_class': <EventDeviceClass.BUTTON: 'button'>,
     'original_icon': None,
-    'original_name': 'Config',
+    'original_name': 'Button (Config)',
     'platform': 'matter',
     'previous_unique_id': None,
     'suggested_object_id': None,
@@ -237,7 +426,7 @@
     'unit_of_measurement': None,
   })
 # ---
-# name: test_events[multi_endpoint_light][event.inovelli_config-state]
+# name: test_events[multi_endpoint_light][event.inovelli_button_config-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
       'device_class': 'button',
@@ -251,17 +440,17 @@
         'long_press',
         'long_release',
       ]),
-      'friendly_name': 'Inovelli Config',
+      'friendly_name': 'Inovelli Button (Config)',
     }),
     'context': <ANY>,
-    'entity_id': 'event.inovelli_config',
+    'entity_id': 'event.inovelli_button_config',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
     'state': 'unknown',
   })
 # ---
-# name: test_events[multi_endpoint_light][event.inovelli_down-entry]
+# name: test_events[multi_endpoint_light][event.inovelli_button_down-entry]
   EntityRegistryEntrySnapshot({
     'aliases': set({
     }),
@@ -284,7 +473,7 @@
     'disabled_by': None,
     'domain': 'event',
     'entity_category': None,
-    'entity_id': 'event.inovelli_down',
+    'entity_id': 'event.inovelli_button_down',
     'has_entity_name': True,
     'hidden_by': None,
     'icon': None,
@@ -296,7 +485,7 @@
     }),
     'original_device_class': <EventDeviceClass.BUTTON: 'button'>,
     'original_icon': None,
-    'original_name': 'Down',
+    'original_name': 'Button (Down)',
     'platform': 'matter',
     'previous_unique_id': None,
     'suggested_object_id': None,
@@ -306,7 +495,7 @@
     'unit_of_measurement': None,
   })
 # ---
-# name: test_events[multi_endpoint_light][event.inovelli_down-state]
+# name: test_events[multi_endpoint_light][event.inovelli_button_down-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
       'device_class': 'button',
@@ -320,17 +509,17 @@
         'long_press',
         'long_release',
       ]),
-      'friendly_name': 'Inovelli Down',
+      'friendly_name': 'Inovelli Button (Down)',
     }),
     'context': <ANY>,
-    'entity_id': 'event.inovelli_down',
+    'entity_id': 'event.inovelli_button_down',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
     'state': 'unknown',
   })
 # ---
-# name: test_events[multi_endpoint_light][event.inovelli_up-entry]
+# name: test_events[multi_endpoint_light][event.inovelli_button_up-entry]
   EntityRegistryEntrySnapshot({
     'aliases': set({
     }),
@@ -353,7 +542,7 @@
     'disabled_by': None,
     'domain': 'event',
     'entity_category': None,
-    'entity_id': 'event.inovelli_up',
+    'entity_id': 'event.inovelli_button_up',
     'has_entity_name': True,
     'hidden_by': None,
     'icon': None,
@@ -365,7 +554,7 @@
     }),
     'original_device_class': <EventDeviceClass.BUTTON: 'button'>,
     'original_icon': None,
-    'original_name': 'Up',
+    'original_name': 'Button (Up)',
     'platform': 'matter',
     'previous_unique_id': None,
     'suggested_object_id': None,
@@ -375,7 +564,7 @@
     'unit_of_measurement': None,
   })
 # ---
-# name: test_events[multi_endpoint_light][event.inovelli_up-state]
+# name: test_events[multi_endpoint_light][event.inovelli_button_up-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
       'device_class': 'button',
@@ -389,10 +578,10 @@
         'long_press',
         'long_release',
       ]),
-      'friendly_name': 'Inovelli Up',
+      'friendly_name': 'Inovelli Button (Up)',
     }),
     'context': <ANY>,
-    'entity_id': 'event.inovelli_up',
+    'entity_id': 'event.inovelli_button_up',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
