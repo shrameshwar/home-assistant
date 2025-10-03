@@ -4,9 +4,15 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Final
 
 from aioamazondevices.api import AmazonDevice
+from aioamazondevices.const import (
+    NOTIFICATION_ALARM,
+    NOTIFICATION_REMINDER,
+    NOTIFICATION_TIMER,
+)
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -19,6 +25,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
+from .const import CATEGORY_NOTIFICATIONS, CATEGORY_SENSORS
 from .coordinator import AmazonConfigEntry
 from .entity import AmazonEntity
 
@@ -32,8 +39,22 @@ class AmazonSensorEntityDescription(SensorEntityDescription):
 
     native_unit_of_measurement_fn: Callable[[AmazonDevice, str], str] | None = None
     is_available_fn: Callable[[AmazonDevice, str], bool] = lambda device, key: (
-        device.online and device.sensors[key].error is False
+        device.online and key in device.sensors and device.sensors[key].error is False
     )
+    category: str = CATEGORY_SENSORS
+
+
+@dataclass(frozen=True, kw_only=True)
+class AmazonNotificationEntityDescription(SensorEntityDescription):
+    """Amazon Devices notification entity description."""
+
+    native_unit_of_measurement_fn: Callable[[AmazonDevice, str], str] | None = None
+    is_available_fn: Callable[[AmazonDevice, str], bool] = lambda device, key: (
+        device.online
+        and key in device.notifications
+        and device.notifications[key].next_occurrence is not None
+    )
+    category: str = CATEGORY_NOTIFICATIONS
 
 
 SENSORS: Final = (
@@ -54,6 +75,23 @@ SENSORS: Final = (
         state_class=SensorStateClass.MEASUREMENT,
     ),
 )
+NOTIFICATIONS: Final = (
+    AmazonNotificationEntityDescription(
+        key=NOTIFICATION_ALARM,
+        translation_key="alarm",
+        device_class=SensorDeviceClass.TIMESTAMP,
+    ),
+    AmazonNotificationEntityDescription(
+        key=NOTIFICATION_REMINDER,
+        translation_key="reminder",
+        device_class=SensorDeviceClass.TIMESTAMP,
+    ),
+    AmazonNotificationEntityDescription(
+        key=NOTIFICATION_TIMER,
+        translation_key="timer",
+        device_class=SensorDeviceClass.TIMESTAMP,
+    ),
+)
 
 
 async def async_setup_entry(
@@ -72,12 +110,18 @@ async def async_setup_entry(
         new_devices = current_devices - known_devices
         if new_devices:
             known_devices.update(new_devices)
-            async_add_entities(
+            sensors_list = [
                 AmazonSensorEntity(coordinator, serial_num, sensor_desc)
                 for sensor_desc in SENSORS
                 for serial_num in new_devices
                 if coordinator.data[serial_num].sensors.get(sensor_desc.key) is not None
-            )
+            ]
+            notifications_list = [
+                AmazonSensorEntity(coordinator, serial_num, notification_desc)
+                for notification_desc in NOTIFICATIONS
+                for serial_num in new_devices
+            ]
+            async_add_entities(sensors_list + notifications_list)
 
     _check_device()
     entry.async_on_unload(coordinator.async_add_listener(_check_device))
@@ -86,7 +130,9 @@ async def async_setup_entry(
 class AmazonSensorEntity(AmazonEntity, SensorEntity):
     """Sensor device."""
 
-    entity_description: AmazonSensorEntityDescription
+    entity_description: (
+        AmazonSensorEntityDescription | AmazonNotificationEntityDescription
+    )
 
     @property
     def native_unit_of_measurement(self) -> str | None:
@@ -99,9 +145,13 @@ class AmazonSensorEntity(AmazonEntity, SensorEntity):
         return super().native_unit_of_measurement
 
     @property
-    def native_value(self) -> StateType:
+    def native_value(self) -> StateType | datetime:
         """Return the state of the sensor."""
-        return self.device.sensors[self.entity_description.key].value
+        # Sensors
+        if self.entity_description.category == CATEGORY_SENSORS:
+            return self.device.sensors[self.entity_description.key].value
+        # Notifications
+        return self.device.notifications[self.entity_description.key].next_occurrence
 
     @property
     def available(self) -> bool:
