@@ -1535,6 +1535,38 @@ def area_devices(hass: HomeAssistant, area_id_or_name: str) -> Iterable[str]:
     return [entry.id for entry in entries]
 
 
+def area_temperature_sensor(hass: HomeAssistant, area_id_or_name: str) -> str | None:
+    """Return the temperature sensor ID for a given area ID or name."""
+    _area_id: str | None
+    # if area_name returns a value, we know the input was an ID, otherwise we
+    # assume it's a name, and if it's neither, we return early
+    if area_name(hass, area_id_or_name) is None:
+        _area_id = area_id(hass, area_id_or_name)
+    else:
+        _area_id = area_id_or_name
+    if _area_id is None:
+        return None
+    area_entry = ar.async_get(hass).async_get_area(_area_id)
+    assert area_entry is not None
+    return area_entry.temperature_entity_id
+
+
+def area_humidity_sensor(hass: HomeAssistant, area_id_or_name: str) -> str | None:
+    """Return the humidity sensor ID for a given area ID or name."""
+    _area_id: str | None
+    # if area_name returns a value, we know the input was an ID, otherwise we
+    # assume it's a name, and if it's neither, we return early
+    if area_name(hass, area_id_or_name) is None:
+        _area_id = area_id(hass, area_id_or_name)
+    else:
+        _area_id = area_id_or_name
+    if _area_id is None:
+        return None
+    area_entry = ar.async_get(hass).async_get_area(_area_id)
+    assert area_entry is not None
+    return area_entry.humidity_entity_id
+
+
 def labels(hass: HomeAssistant, lookup_value: Any = None) -> Iterable[str | None]:
     """Return all labels, or those from a area ID, device ID, or entity ID."""
     label_reg = lr.async_get(hass)
@@ -2576,6 +2608,14 @@ class TemplateEnvironment(ImmutableSandboxedEnvironment):
 
         self.globals["area_devices"] = hassfunction(area_devices)
         self.filters["area_devices"] = self.globals["area_devices"]
+
+        self.globals["area_temperature_sensor"] = hassfunction(area_temperature_sensor)
+        self.filters["area_temperature_sensor"] = self.globals[
+            "area_temperature_sensor"
+        ]
+
+        self.globals["area_humidity_sensor"] = hassfunction(area_humidity_sensor)
+        self.filters["area_humidity_sensor"] = self.globals["area_humidity_sensor"]
 
         # Floor extensions
 
