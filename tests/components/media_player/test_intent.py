@@ -29,9 +29,13 @@ from homeassistant.components.media_player.const import (
 from homeassistant.const import (
     ATTR_FRIENDLY_NAME,
     ATTR_SUPPORTED_FEATURES,
+    STATE_BUFFERING,
     STATE_IDLE,
+    STATE_OFF,
+    STATE_ON,
     STATE_PAUSED,
     STATE_PLAYING,
+    STATE_STANDBY,
 )
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -225,16 +229,27 @@ async def test_previous_media_player_intent(hass: HomeAssistant) -> None:
         )
 
 
-async def test_volume_media_player_intent(hass: HomeAssistant) -> None:
+@pytest.mark.parametrize(
+    "state",
+    [
+        STATE_PLAYING,
+        STATE_PAUSED,
+        STATE_IDLE,
+        STATE_ON,
+        STATE_BUFFERING,
+        STATE_STANDBY,
+        STATE_OFF,
+    ],
+)
+async def test_volume_media_player_intent(hass: HomeAssistant, state) -> None:
     """Test HassSetVolume intent for media players."""
     await media_player_intent.async_setup_intents(hass)
 
     entity_id = f"{DOMAIN}.test_media_player"
     attributes = {ATTR_SUPPORTED_FEATURES: MediaPlayerEntityFeature.VOLUME_SET}
 
-    hass.states.async_set(entity_id, STATE_PLAYING, attributes=attributes)
+    hass.states.async_set(entity_id, state, attributes=attributes)
     calls = async_mock_service(hass, DOMAIN, SERVICE_VOLUME_SET)
-
     response = await intent.async_handle(
         hass,
         "test",
