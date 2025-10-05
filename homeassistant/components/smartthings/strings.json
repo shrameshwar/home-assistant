@@ -627,6 +627,9 @@
       "display_lighting": {
         "name": "Display lighting"
       },
+      "beep": {
+        "name": "Beep"
+      },
       "wrinkle_prevent": {
         "name": "Wrinkle prevent"
       },
