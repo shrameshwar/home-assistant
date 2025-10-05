@@ -12,7 +12,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import ComelitConfigEntry, ComelitSerialBridge
 from .entity import ComelitBridgeBaseEntity
-from .utils import bridge_api_call
+from .utils import bridge_api_call, list_new_devices
 
 # Coordinator is used to centralize the data updates
 PARALLEL_UPDATES = 0
@@ -30,10 +30,7 @@ async def async_setup_entry(
     known_devices: set[int] = set()
 
     def _check_device() -> None:
-        current_devices = set(coordinator.data[LIGHT])
-        new_devices = current_devices - known_devices
-        if new_devices:
-            known_devices.update(new_devices)
+        if new_devices := list_new_devices(coordinator.data[LIGHT], known_devices):
             async_add_entities(
                 ComelitLightEntity(coordinator, device, config_entry.entry_id)
                 for device in coordinator.data[LIGHT].values()

@@ -113,3 +113,16 @@ def bridge_api_call[_T: ComelitBridgeBaseEntity, **_P](
             self.coordinator.config_entry.async_start_reauth(self.hass)
 
     return cmd_wrapper
+
+
+def list_new_devices(
+    data: dict[int, Any],
+    known_devices: set[int],
+) -> list[int]:
+    """Generate list of new devices."""
+    current_devices = set(data)
+    new_devices = current_devices - known_devices
+    if new_devices:
+        known_devices.update(new_devices)
+        return list(new_devices)
+    return []

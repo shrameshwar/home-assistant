@@ -13,10 +13,12 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import ComelitConfigEntry, ComelitSerialBridge
 from .entity import ComelitBridgeBaseEntity
-from .utils import bridge_api_call
+from .utils import bridge_api_call, list_new_devices
 
 # Coordinator is used to centralize the data updates
 PARALLEL_UPDATES = 0
+
+BRIDGE_DEVICE_TYPES = (IRRIGATION, OTHER)
 
 
 async def async_setup_entry(
@@ -29,26 +31,23 @@ async def async_setup_entry(
     coordinator = cast(ComelitSerialBridge, config_entry.runtime_data)
 
     entities: list[ComelitSwitchEntity] = []
-    entities.extend(
-        ComelitSwitchEntity(coordinator, device, config_entry.entry_id)
-        for device in coordinator.data[IRRIGATION].values()
-    )
-    entities.extend(
-        ComelitSwitchEntity(coordinator, device, config_entry.entry_id)
-        for device in coordinator.data[OTHER].values()
-    )
+
+    for dev_type in BRIDGE_DEVICE_TYPES:
+        entities.extend(
+            ComelitSwitchEntity(coordinator, device, config_entry.entry_id)
+            for device in coordinator.data[dev_type].values()
+        )
     async_add_entities(entities)
 
     known_devices: dict[str, set[int]] = {
-        dev_type: set() for dev_type in (IRRIGATION, OTHER)
+        dev_type: set() for dev_type in BRIDGE_DEVICE_TYPES
     }
 
     def _check_device() -> None:
-        for dev_type in (IRRIGATION, OTHER):
-            current_devices = set(coordinator.data[dev_type])
-            new_devices = current_devices - known_devices[dev_type]
-            if new_devices:
-                known_devices[dev_type].update(new_devices)
+        for dev_type in BRIDGE_DEVICE_TYPES:
+            if new_devices := list_new_devices(
+                coordinator.data[dev_type], known_devices[dev_type]
+            ):
                 async_add_entities(
                     ComelitSwitchEntity(coordinator, device, config_entry.entry_id)
                     for device in coordinator.data[dev_type].values()
