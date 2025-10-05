@@ -26,5 +26,23 @@
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]"
     }
+  },
+  "entity": {
+    "climate": {
+      "nhc_thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "day": "Day",
+              "night": "Night",
+              "eco": "Eco",
+              "prog1": "Program 1",
+              "prog2": "Program 2",
+              "prog3": "Program 3"
+            }
+          }
+        }
+      }
+    }
   }
 }
