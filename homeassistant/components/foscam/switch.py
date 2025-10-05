@@ -30,6 +30,59 @@ def handle_ir_turn_off(session: FoscamCamera) -> None:
     session.close_infra_led()
 
 
+def handle_pet_detect_turn_on(session: FoscamCamera) -> None:
+    """Turns on pet detection."""
+    ret, config = session.get_motion_detect_config()
+    if not ret:
+        config["petEnable"] = 1
+        session.set_motion_detect_config(config)
+
+
+def handle_pet_detect_turn_off(session: FoscamCamera) -> None:
+    """Turns off pet detection."""
+
+    ret, config = session.get_motion_detect_config()
+    if not ret:
+        config["petEnable"] = 0
+        session.set_motion_detect_config(config)
+
+
+def handle_car_detect_turn_on(session: FoscamCamera) -> None:
+    """Turns on vehicle detection."""
+
+    ret, config = session.get_motion_detect_config()
+    if not ret:
+        config["carEnable"] = 1
+        session.set_motion_detect_config(config)
+
+
+def handle_car_detect_turn_off(session: FoscamCamera) -> None:
+    """Turns off vehicle detection."""
+
+    ret, config = session.get_motion_detect_config()
+    if not ret:
+        config["carEnable"] = 0
+        session.set_motion_detect_config(config)
+
+
+def handle_human_detect_turn_on(session: FoscamCamera) -> None:
+    """Turns on human detection."""
+
+    ret, config = session.get_motion_detect_config()
+    if not ret:
+        config["humanEnable"] = 1
+        session.set_motion_detect_config(config)
+
+
+def handle_human_detect_turn_off(session: FoscamCamera) -> None:
+    """Turns off human detection."""
+
+    ret, config = session.get_motion_detect_config()
+    if not ret:
+        config["humanEnable"] = 0
+        session.set_motion_detect_config(config)
+
+
 @dataclass(frozen=True, kw_only=True)
 class FoscamSwitchEntityDescription(SwitchEntityDescription):
     """A custom entity description that supports a turn_off function."""
@@ -37,6 +90,7 @@ class FoscamSwitchEntityDescription(SwitchEntityDescription):
     native_value_fn: Callable[..., bool]
     turn_off_fn: Callable[[FoscamCamera], None]
     turn_on_fn: Callable[[FoscamCamera], None]
+    exists_fn: Callable[[FoscamCoordinator], bool] = lambda _: True
 
 
 SWITCH_DESCRIPTIONS: list[FoscamSwitchEntityDescription] = [
@@ -102,6 +156,7 @@ SWITCH_DESCRIPTIONS: list[FoscamSwitchEntityDescription] = [
         native_value_fn=lambda data: data.is_open_hdr,
         turn_off_fn=lambda session: session.setHdrMode(0),
         turn_on_fn=lambda session: session.setHdrMode(1),
+        exists_fn=lambda coordinator: coordinator.data.supports_hdr_adjustment,
     ),
     FoscamSwitchEntityDescription(
         key="is_open_wdr",
@@ -109,6 +164,30 @@ SWITCH_DESCRIPTIONS: list[FoscamSwitchEntityDescription] = [
         native_value_fn=lambda data: data.is_open_wdr,
         turn_off_fn=lambda session: session.setWdrMode(0),
         turn_on_fn=lambda session: session.setWdrMode(1),
+        exists_fn=lambda coordinator: coordinator.data.supports_wdr_adjustment,
+    ),
+    FoscamSwitchEntityDescription(
+        key="pet_detection",
+        translation_key="pet_detection_switch",
+        native_value_fn=lambda data: data.is_pet_detection_on,
+        turn_off_fn=handle_pet_detect_turn_off,
+        turn_on_fn=handle_pet_detect_turn_on,
+        exists_fn=lambda coordinator: coordinator.data.supports_pet_adjustment,
+    ),
+    FoscamSwitchEntityDescription(
+        key="car_detection",
+        translation_key="car_detection_switch",
+        native_value_fn=lambda data: data.is_car_detection_on,
+        turn_off_fn=handle_car_detect_turn_off,
+        turn_on_fn=handle_car_detect_turn_on,
+        exists_fn=lambda coordinator: coordinator.data.supports_car_adjustment,
+    ),
+    FoscamSwitchEntityDescription(
+        key="human_detection",
+        translation_key="human_detection_switch",
+        native_value_fn=lambda data: data.is_human_detection_on,
+        turn_off_fn=handle_human_detect_turn_off,
+        turn_on_fn=handle_human_detect_turn_on,
     ),
 ]
 
@@ -122,24 +201,11 @@ async def async_setup_entry(
 
     coordinator = config_entry.runtime_data
 
-    entities = []
-
-    product_info = coordinator.data.product_info
-    reserve3 = product_info.get("reserve3", "0")
-
-    for description in SWITCH_DESCRIPTIONS:
-        if description.key == "is_asleep":
-            if not coordinator.data.is_asleep["supported"]:
-                continue
-        elif description.key == "is_open_hdr":
-            if ((1 << 8) & int(reserve3)) != 0 or ((1 << 7) & int(reserve3)) == 0:
-                continue
-        elif description.key == "is_open_wdr":
-            if ((1 << 8) & int(reserve3)) == 0:
-                continue
-
-        entities.append(FoscamGenericSwitch(coordinator, description))
-    async_add_entities(entities)
+    async_add_entities(
+        FoscamGenericSwitch(coordinator, description)
+        for description in SWITCH_DESCRIPTIONS
+        if description.exists_fn(coordinator)
+    )
 
 
 class FoscamGenericSwitch(FoscamEntity, SwitchEntity):
