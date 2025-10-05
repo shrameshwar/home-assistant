@@ -1,5 +1,6 @@
 """Tests for the update coordinator."""
 
+import asyncio
 from datetime import datetime, timedelta
 import logging
 from unittest.mock import AsyncMock, Mock, patch
@@ -331,6 +332,35 @@ async def test_refresh_no_update_method(
 
     with pytest.raises(NotImplementedError):
         await crd.async_refresh()
+
+
+async def test_refresh_cancelled(
+    hass: HomeAssistant,
+    crd: update_coordinator.DataUpdateCoordinator[int],
+) -> None:
+    """Test that we don't swallow cancellation."""
+    await crd.async_refresh()
+
+    start = asyncio.Event()
+    abort = asyncio.Event()
+
+    async def _update() -> bool:
+        start.set()
+        await abort.wait()
+        return True
+
+    crd.update_method = _update
+    crd.last_update_success = True
+
+    task = hass.async_create_task(crd.async_refresh())
+    await start.wait()
+    task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    abort.set()
+    assert crd.last_update_success is False
 
 
 async def test_update_interval(
