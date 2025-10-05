@@ -40,6 +40,12 @@ from .util import (
     renormalize,
 )
 
+# Defaults for color temperature clamping
+# if the device does not report min/max physical mireds (it should!),
+# or device has ranges outside normal implementations, use these defaults
+DEFAULT_MIREDS_MAX = 500  # 2000 Kelvin
+DEFAULT_MIREDS_MIN = 153  # 6535 Kelvin
+
 COLOR_MODE_MAP = {
     clusters.ColorControl.Enums.ColorModeEnum.kCurrentHueAndCurrentSaturation: ColorMode.HS,
     clusters.ColorControl.Enums.ColorModeEnum.kCurrentXAndCurrentY: ColorMode.XY,
@@ -144,6 +150,22 @@ class MatterLight(MatterEntity, LightEntity):
         color_temp_mired = color_util.color_temperature_kelvin_to_mired(
             color_temp_kelvin
         )
+        # clamp to supported range
+        max_mireds = (
+            self.get_matter_attribute_value(
+                clusters.ColorControl.Attributes.ColorTempPhysicalMaxMireds
+            )
+            or DEFAULT_MIREDS_MAX
+        )
+        min_mireds = (
+            self.get_matter_attribute_value(
+                clusters.ColorControl.Attributes.ColorTempPhysicalMinMireds
+            )
+            or DEFAULT_MIREDS_MIN
+        )
+        color_temp_mired = min(color_temp_mired, max_mireds)
+        color_temp_mired = max(color_temp_mired, min_mireds)
+
         await self.send_device_command(
             clusters.ColorControl.Commands.MoveToColorTemperature(
                 colorTemperatureMireds=color_temp_mired,
@@ -370,20 +392,28 @@ class MatterLight(MatterEntity, LightEntity):
                 ):
                     supported_color_modes.add(ColorMode.COLOR_TEMP)
                     self._supports_color_temperature = True
-                    min_mireds = self.get_matter_attribute_value(
-                        clusters.ColorControl.Attributes.ColorTempPhysicalMinMireds
-                    )
-                    if min_mireds > 0:
-                        self._attr_max_color_temp_kelvin = (
-                            color_util.color_temperature_mired_to_kelvin(min_mireds)
+                    min_mireds = (
+                        self.get_matter_attribute_value(
+                            clusters.ColorControl.Attributes.ColorTempPhysicalMinMireds
                         )
-                    max_mireds = self.get_matter_attribute_value(
-                        clusters.ColorControl.Attributes.ColorTempPhysicalMaxMireds
+                        or DEFAULT_MIREDS_MIN
                     )
-                    if max_mireds > 0:
-                        self._attr_min_color_temp_kelvin = (
-                            color_util.color_temperature_mired_to_kelvin(max_mireds)
+                    self._attr_max_color_temp_kelvin = (
+                        color_util.color_temperature_mired_to_kelvin(
+                            max(min_mireds, DEFAULT_MIREDS_MIN)
                         )
+                    )
+                    max_mireds = (
+                        self.get_matter_attribute_value(
+                            clusters.ColorControl.Attributes.ColorTempPhysicalMaxMireds
+                        )
+                        or DEFAULT_MIREDS_MAX
+                    )
+                    self._attr_min_color_temp_kelvin = (
+                        color_util.color_temperature_mired_to_kelvin(
+                            min(max_mireds, DEFAULT_MIREDS_MAX)
+                        )
+                    )
 
             supported_color_modes = filter_supported_color_modes(supported_color_modes)
             self._attr_supported_color_modes = supported_color_modes
