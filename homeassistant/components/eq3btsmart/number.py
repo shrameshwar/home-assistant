@@ -2,7 +2,6 @@
 
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 from eq3btsmart import Thermostat
 from eq3btsmart.const import EQ3_MAX_OFFSET, EQ3_MAX_TEMP, EQ3_MIN_OFFSET, EQ3_MIN_TEMP
@@ -18,7 +17,6 @@ from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from . import Eq3ConfigEntry
 from .const import (
     ENTITY_KEY_COMFORT,
     ENTITY_KEY_ECO,
@@ -27,6 +25,7 @@ from .const import (
     ENTITY_KEY_WINDOW_OPEN_TIMEOUT,
     EQ3BT_STEP,
 )
+from .coordinator import Eq3ConfigEntry
 from .entity import Eq3Entity
 
 
@@ -107,7 +106,6 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the entry."""
-
     async_add_entities(
         Eq3NumberEntity(entry, entity_description)
         for entity_description in NUMBER_ENTITY_DESCRIPTIONS
@@ -123,30 +121,21 @@ class Eq3NumberEntity(Eq3Entity, NumberEntity):
         self, entry: Eq3ConfigEntry, entity_description: Eq3NumberEntityDescription
     ) -> None:
         """Initialize the entity."""
-
         super().__init__(entry, entity_description.key)
         self.entity_description = entity_description
 
     @property
-    def native_value(self) -> float:
+    def available(self) -> bool:
+        """Return whether the entity is available."""
+        return super().available and self.coordinator.data.presets is not None
+
+    @property
+    def native_value(self) -> float | None:
         """Return the state of the entity."""
-
-        if TYPE_CHECKING:
-            assert self._thermostat.status.presets is not None
-
-        return self.entity_description.value_func(self._thermostat.status.presets)
+        if self.coordinator.data.presets is None:
+            return None
+        return self.entity_description.value_func(self.coordinator.data.presets)
 
     async def async_set_native_value(self, value: float) -> None:
         """Set the state of the entity."""
-
         await self.entity_description.value_set_func(self._thermostat)(value)
-
-    @property
-    def available(self) -> bool:
-        """Return whether the entity is available."""
-
-        return (
-            super().available
-            and self._thermostat.status.presets is not None
-            and self._attr_available
-        )

@@ -15,19 +15,18 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 import homeassistant.util.dt as dt_util
 
-from . import Eq3ConfigEntry
 from .const import (
     DEFAULT_AWAY_HOURS,
     ENTITY_KEY_AWAY,
     ENTITY_KEY_BOOST,
     ENTITY_KEY_LOCK,
 )
+from .coordinator import Eq3ConfigEntry
 from .entity import Eq3Entity
 
 
 async def async_set_away(thermostat: Thermostat, enable: bool) -> Status:
     """Backport old async_set_away behavior."""
-
     if not enable:
         return await thermostat.async_set_mode(Eq3OperationMode.AUTO)
 
@@ -71,7 +70,6 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the entry."""
-
     async_add_entities(
         Eq3SwitchEntity(entry, entity_description)
         for entity_description in SWITCH_ENTITY_DESCRIPTIONS
@@ -89,22 +87,18 @@ class Eq3SwitchEntity(Eq3Entity, SwitchEntity):
         entity_description: Eq3SwitchEntityDescription,
     ) -> None:
         """Initialize the entity."""
-
         super().__init__(entry, entity_description.key)
         self.entity_description = entity_description
 
+    @property
+    def is_on(self) -> bool:
+        """Return if the switch is on."""
+        return self.entity_description.value_func(self.coordinator.data)
+
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the switch."""
-
         await self.entity_description.toggle_func(self._thermostat)(True)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the switch."""
-
         await self.entity_description.toggle_func(self._thermostat)(False)
-
-    @property
-    def is_on(self) -> bool:
-        """Return the state of the switch."""
-
-        return self.entity_description.value_func(self._thermostat.status)

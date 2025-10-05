@@ -2,6 +2,8 @@
 
 from typing import Any
 
+import voluptuous as vol
+
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_MAC
@@ -9,7 +11,12 @@ from homeassistant.helpers.device_registry import format_mac
 from homeassistant.util import slugify
 
 from .const import DOMAIN
-from .schemas import SCHEMA_MAC
+
+SCHEMA_MAC = vol.Schema(
+    {
+        vol.Required(CONF_MAC): str,
+    }
+)
 
 
 class EQ3ConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -17,14 +24,12 @@ class EQ3ConfigFlow(ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         """Initialize the config flow."""
-
         self.mac_address: str = ""
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle a flow initialized by the user."""
-
         errors: dict[str, str] = {}
         if user_input is None:
             return self.async_show_form(
@@ -47,14 +52,13 @@ class EQ3ConfigFlow(ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured(updates=user_input)
 
         # We can not validate if this mac actually is an eQ-3 thermostat,
-        # since the thermostat probably is not advertising right now.
+        # since the thermostat might not be advertising right now.
         return self.async_create_entry(title=slugify(mac_address), data={})
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> ConfigFlowResult:
         """Handle bluetooth discovery."""
-
         self.mac_address = format_mac(discovery_info.address)
 
         await self.async_set_unique_id(self.mac_address)
@@ -68,7 +72,6 @@ class EQ3ConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle flow start."""
-
         if user_input is None:
             return self.async_show_form(
                 step_id="init",
@@ -86,7 +89,6 @@ class EQ3ConfigFlow(ConfigFlow, domain=DOMAIN):
 
 def validate_mac(mac: str) -> bool:
     """Return whether or not given value is a valid MAC address."""
-
     return bool(
         mac
         and len(mac) == 17
