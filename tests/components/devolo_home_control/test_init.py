@@ -9,7 +9,7 @@ from homeassistant.components.devolo_home_control.const import DOMAIN
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import device_registry as dr, issue_registry as ir
 from homeassistant.setup import async_setup_component
 
 from . import configure_integration
@@ -18,12 +18,15 @@ from .mocks import HomeControlMock, HomeControlMockBinarySensor
 from tests.typing import WebSocketGenerator
 
 
-async def test_setup_entry(hass: HomeAssistant) -> None:
+async def test_setup_entry(
+    hass: HomeAssistant, issue_registry: ir.IssueRegistry
+) -> None:
     """Test setup entry."""
     entry = configure_integration(hass)
     with patch("homeassistant.components.devolo_home_control.HomeControl"):
         await hass.config_entries.async_setup(entry.entry_id)
         assert entry.state is ConfigEntryState.LOADED
+        assert issue_registry.async_get_issue(DOMAIN, "api_shutdown")
 
 
 async def test_setup_entry_credentials_invalid(
@@ -57,7 +60,9 @@ async def test_setup_gateway_offline(hass: HomeAssistant) -> None:
         assert entry.state is ConfigEntryState.SETUP_RETRY
 
 
-async def test_unload_entry(hass: HomeAssistant) -> None:
+async def test_unload_entry(
+    hass: HomeAssistant, issue_registry: ir.IssueRegistry
+) -> None:
     """Test unload entry."""
     entry = configure_integration(hass)
     with patch("homeassistant.components.devolo_home_control.HomeControl"):
@@ -65,6 +70,7 @@ async def test_unload_entry(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
         await hass.config_entries.async_unload(entry.entry_id)
         assert entry.state is ConfigEntryState.NOT_LOADED
+        assert not issue_registry.async_get_issue(DOMAIN, "api_shutdown")
 
 
 async def test_home_assistant_stop(hass: HomeAssistant) -> None:
