@@ -4,6 +4,23 @@
       "switch": {
         "default": "mdi:water"
       }
+    },
+    "sensor": {
+      "rain_delay": {
+        "default": "mdi:timer-sand"
+      },
+      "active_zone_count": {
+        "default": "mdi:counter"
+      },
+      "zone_delay": {
+        "default": "mdi:timer-pause"
+      },
+      "water_hammer_duration": {
+        "default": "mdi:hammer"
+      },
+      "region": {
+        "default": "mdi:earth"
+      }
     }
   },
   "services": {

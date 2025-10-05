@@ -50,6 +50,7 @@ class YardianUpdateCoordinator(DataUpdateCoordinator[YardianDeviceState]):
         self.yid = entry.data["yid"]
         self._name = entry.title
         self._model = entry.data["model"]
+        self._serial = entry.data.get("serialNumber")
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -59,13 +60,17 @@ class YardianUpdateCoordinator(DataUpdateCoordinator[YardianDeviceState]):
             identifiers={(DOMAIN, self.yid)},
             manufacturer=MANUFACTURER,
             model=self._model,
+            serial_number=self._serial,
         )
 
     async def _async_update_data(self) -> YardianDeviceState:
         """Fetch data from Yardian device."""
         try:
             async with asyncio.timeout(10):
-                return await self.controller.fetch_device_state()
+                device_state = await self.controller.fetch_device_state()
+                oper_info = await self.controller.fetch_oper_info()
+                setattr(device_state, "oper_info", oper_info)
+                return device_state
 
         except TimeoutError as e:
             raise UpdateFailed("Communication with Device was time out") from e
