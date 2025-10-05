@@ -30,6 +30,7 @@ _LOGGER = logging.getLogger(__name__)
 TIMER_NOT_FOUND_RESPONSE = "timer_not_found"
 MULTIPLE_TIMERS_MATCHED_RESPONSE = "multiple_timers_matched"
 NO_TIMER_SUPPORT_RESPONSE = "no_timer_support"
+NO_INTENT_MATCH_RESPONSE = "no_intent_match"
 
 
 @dataclass
@@ -200,6 +201,17 @@ class TimersNotSupportedError(intent.IntentHandleError):
         super().__init__(
             f"Device does not support timers: device_id={device_id}",
             NO_TIMER_SUPPORT_RESPONSE,
+        )
+
+
+class NoIntentMatchError(intent.IntentHandleError):
+    """Error when a conversation command does not match any intent."""
+
+    def __init__(self, command: str) -> None:
+        """Initialize error."""
+        super().__init__(
+            f"No intent was matched for the provided command: {command}",
+            NO_INTENT_MATCH_RESPONSE,
         )
 
 
@@ -836,6 +848,12 @@ class StartTimerIntentHandler(intent.IntentHandler):
             # Fail early if this is not a delayed command
             raise TimersNotSupportedError(intent_obj.device_id)
 
+        # Validate conversation command if provided
+        if conversation_command and not await self._validate_conversation_command(
+            intent_obj, conversation_command
+        ):
+            raise NoIntentMatchError(conversation_command)
+
         name: str | None = None
         if "name" in slots:
             name = slots["name"]["value"]
@@ -864,6 +882,48 @@ class StartTimerIntentHandler(intent.IntentHandler):
         )
 
         return intent_obj.create_response()
+
+    async def _validate_conversation_command(
+        self, intent_obj: intent.Intent, conversation_command: str
+    ) -> bool:
+        """Validate that a conversation command can be executed."""
+        from homeassistant.components.conversation import (  # noqa: PLC0415
+            ConversationInput,
+            async_get_agent,
+            default_agent,
+        )
+
+        # Only validate if using the default agent
+        conversation_agent = async_get_agent(
+            intent_obj.hass, intent_obj.conversation_agent_id
+        )
+
+        if conversation_agent is None or not isinstance(
+            conversation_agent, default_agent.DefaultAgent
+        ):
+            return True  # Skip validation
+
+        test_input = ConversationInput(
+            text=conversation_command,
+            language=intent_obj.language,
+            device_id=intent_obj.device_id,
+            conversation_id=None,
+            context=intent_obj.context,
+            agent_id=str(intent_obj.conversation_agent_id),
+            satellite_id=None,
+        )
+
+        # check for sentence trigger
+        if (
+            await conversation_agent.async_recognize_sentence_trigger(test_input)
+        ) is not None:
+            return True
+
+        # check for intent
+        if (await conversation_agent.async_recognize_intent(test_input)) is not None:
+            return True
+
+        return False
 
 
 class CancelTimerIntentHandler(intent.IntentHandler):
