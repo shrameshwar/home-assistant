@@ -12,5 +12,10 @@
       "name": "Reload resources",
       "description": "Reloads dashboard resources from the YAML-configuration."
     }
+  },
+  "exceptions": {
+    "url_already_exists": {
+      "message": "The {url} URL is already in use. Please choose a different one."
+    }
   }
 }
