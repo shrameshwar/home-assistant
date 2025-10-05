@@ -6,6 +6,7 @@ from fritzconnection.core.exceptions import (
     FritzActionError,
     FritzConnectionException,
     FritzServiceError,
+    FritzActionFailedError,
 )
 from fritzconnection.lib.fritzwlan import DEFAULT_PASSWORD_LENGTH
 import voluptuous as vol
@@ -25,6 +26,16 @@ SERVICE_SCHEMA_SET_GUEST_WIFI_PW = vol.Schema(
         vol.Required("device_id"): str,
         vol.Optional("password"): vol.Length(min=8, max=63),
         vol.Optional("length"): vol.Range(min=8, max=63),
+    }
+)
+SERVICE_DIAL = "dial"
+SERVICE_SCHEMA_DIAL = vol.Schema(
+    {
+        vol.Required("device_id"): str,
+        vol.Required("number"): str,
+        vol.Optional("max_ring_seconds"): vol.All(
+            vol.Coerce(float), vol.Range(min=0.1, max=360.0)
+        ),
     }
 )
 
@@ -65,6 +76,45 @@ async def _async_set_guest_wifi_password(service_call: ServiceCall) -> None:
             ) from ex
 
 
+async def _async_dial(service_call: ServiceCall) -> None:
+    """Call Fritz dial service."""
+    hass = service_call.hass
+    target_entry_ids = await async_extract_config_entry_ids(hass, service_call)
+    target_entries: list[FritzConfigEntry] = [
+        loaded_entry
+        for loaded_entry in hass.config_entries.async_loaded_entries(DOMAIN)
+        if loaded_entry.entry_id in target_entry_ids
+    ]
+
+    if not target_entries:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="config_entry_not_found",
+            translation_placeholders={"service": service_call.service},
+        )
+
+    for target_entry in target_entries:
+        _LOGGER.debug("Executing service %s", service_call.service)
+        avm_wrapper = target_entry.runtime_data
+        try:
+            await avm_wrapper.async_trigger_dial(
+                service_call.data.get("number"),
+                max_ring_seconds=service_call.data.get("max_ring_seconds"),
+            )
+        except (FritzServiceError, FritzActionError) as ex:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="service_parameter_unknown"
+            ) from ex
+        except FritzActionFailedError as ex:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="service_dial_failed"
+            ) from ex
+        except FritzConnectionException as ex:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="service_not_supported"
+            ) from ex
+
+
 @callback
 def async_setup_services(hass: HomeAssistant) -> None:
     """Set up services for Fritz integration."""
@@ -75,3 +125,4 @@ def async_setup_services(hass: HomeAssistant) -> None:
         _async_set_guest_wifi_password,
         SERVICE_SCHEMA_SET_GUEST_WIFI_PW,
     )
+    hass.services.async_register(DOMAIN, SERVICE_DIAL, _async_dial, SERVICE_SCHEMA_DIAL)
