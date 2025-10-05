@@ -2361,6 +2361,9 @@ snapcast==2.3.6
 # homeassistant.components.sonos
 soco==0.30.12
 
+# homeassistant.components.solaredge_modules
+solaredge-web==0.0.1
+
 # homeassistant.components.solarlog
 solarlog_cli==0.6.0
 
