@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from pooldose.type_definitions import DeviceInfoDict
+
 from homeassistant.const import CONF_MAC
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
 from homeassistant.helpers.entity import EntityDescription
@@ -14,13 +16,13 @@ from .coordinator import PooldoseCoordinator
 
 
 def device_info(
-    info: dict | None, unique_id: str, mac: str | None = None
+    info: DeviceInfoDict | None, unique_id: str, mac: str | None = None
 ) -> DeviceInfo:
     """Create device info for PoolDose devices."""
     if info is None:
         info = {}
 
-    api_version = info.get("API_VERSION", "").removesuffix("/")
+    api_version = (info.get("API_VERSION") or "").removesuffix("/")
 
     return DeviceInfo(
         identifiers={(DOMAIN, unique_id)},
@@ -51,7 +53,7 @@ class PooldoseEntity(CoordinatorEntity[PooldoseCoordinator]):
         self,
         coordinator: PooldoseCoordinator,
         serial_number: str,
-        device_properties: dict[str, Any],
+        device_properties: DeviceInfoDict,
         entity_description: EntityDescription,
         platform_name: str,
     ) -> None:
@@ -73,11 +75,16 @@ class PooldoseEntity(CoordinatorEntity[PooldoseCoordinator]):
             return False
         # Check if the entity type exists in coordinator data
         platform_data = self.coordinator.data.get(self.platform_name, {})
-        return self.entity_description.key in platform_data
+        return (
+            isinstance(platform_data, dict)
+            and self.entity_description.key in platform_data
+        )
 
-    def get_data(self) -> dict | None:
+    def get_data(self) -> dict[str, Any] | None:
         """Get data for this entity, only if available."""
         if not self.available:
             return None
         platform_data = self.coordinator.data.get(self.platform_name, {})
-        return platform_data.get(self.entity_description.key)
+        if isinstance(platform_data, dict):
+            return platform_data.get(self.entity_description.key)
+        return None
