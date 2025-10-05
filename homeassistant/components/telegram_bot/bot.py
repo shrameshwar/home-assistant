@@ -7,7 +7,7 @@ import io
 import logging
 from ssl import SSLContext
 from types import MappingProxyType
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from telegram import (
@@ -17,6 +17,7 @@ from telegram import (
     InlineKeyboardMarkup,
     InputPollOption,
     Message,
+    PhotoSize,
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
     Update,
@@ -50,6 +51,9 @@ from .const import (
     ATTR_DISABLE_NOTIF,
     ATTR_DISABLE_WEB_PREV,
     ATTR_FILE,
+    ATTR_FILE_ID,
+    ATTR_FILE_MIME_TYPE,
+    ATTR_FILE_NAME,
     ATTR_FROM_FIRST,
     ATTR_FROM_LAST,
     ATTR_KEYBOARD,
@@ -78,6 +82,7 @@ from .const import (
     CONF_CHAT_ID,
     CONF_PROXY_URL,
     DOMAIN,
+    EVENT_TELEGRAM_ATTACHMENT,
     EVENT_TELEGRAM_CALLBACK,
     EVENT_TELEGRAM_COMMAND,
     EVENT_TELEGRAM_SENT,
@@ -175,6 +180,10 @@ class BaseTelegramBot:
             # This is a command message - set event type to command and split data into command and args
             event_type = EVENT_TELEGRAM_COMMAND
             event_data.update(self._get_command_event_data(message.text))
+        elif filters.ATTACHMENT.filter(message):
+            event_type = EVENT_TELEGRAM_ATTACHMENT
+            event_data[ATTR_TEXT] = message.caption
+            event_data.update(self._get_file_id_event_data(message))
         else:
             event_type = EVENT_TELEGRAM_TEXT
             event_data[ATTR_TEXT] = message.text
@@ -183,6 +192,24 @@ class BaseTelegramBot:
             event_data.update(self._get_user_event_data(message.from_user))
 
         return event_type, event_data
+
+    def _get_file_id_event_data(self, message: Message) -> dict[str, Any]:
+        """Extract file_id from a message attachment, if any."""
+        if filters.PHOTO.filter(message):
+            photos = cast(Sequence[PhotoSize], message.effective_attachment)
+            return {
+                ATTR_FILE_ID: photos[-1].file_id,
+                ATTR_FILE_MIME_TYPE: "image/jpeg",  # telegram always uses jpeg for photos
+            }
+        return {
+            k: getattr(message.effective_attachment, v)
+            for k, v in (
+                (ATTR_FILE_ID, "file_id"),
+                (ATTR_FILE_NAME, "file_name"),
+                (ATTR_FILE_MIME_TYPE, "mime_type"),
+            )
+            if hasattr(message.effective_attachment, v)
+        }
 
     def _get_user_event_data(self, user: User) -> dict[str, Any]:
         return {
