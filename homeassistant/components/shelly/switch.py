@@ -97,7 +97,7 @@ RPC_SWITCHES = {
         is_on=lambda status: bool(status["value"]),
         method_on="boolean_set",
         method_off="boolean_set",
-        method_params_fn=lambda id, value: {"id": id, "value": value},
+        method_params_fn=lambda id, value: {"id_": id, "value": value},
     ),
     "script": RpcSwitchDescription(
         key="script",
