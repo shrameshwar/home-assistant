@@ -38,6 +38,12 @@
     },
     "set_asyncio_debug": {
       "service": "mdi:bug-check"
+    },
+    "start_auditing_events": {
+      "service": "mdi:clipboard-alert-outline"
+    },
+    "stop_auditing_events": {
+      "service": "mdi:clipboard-alert"
     }
   }
 }
