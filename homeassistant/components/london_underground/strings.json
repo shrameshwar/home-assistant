@@ -1,0 +1,38 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up London Underground",
+        "description": "Select which tube lines you want to monitor",
+        "data": {
+          "line": "Tube lines"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "timeout_connect": "[%key:common::config_flow::error::timeout_connect%]",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
+    },
+    "abort": {
+      "single_instance_allowed": "[%key:common::config_flow::abort::single_instance_allowed%]"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure London Underground",
+        "description": "[%key:component::london_underground::config::step::user::description%]",
+        "data": {
+          "line": "[%key:component::london_underground::config::step::user::data::line%]"
+        }
+      }
+    }
+  },
+  "issues": {
+    "yaml_deprecated": {
+      "title": "YAML configuration is deprecated",
+      "description": "The London Underground integration no longer supports configuration via YAML. Your configuration in configuration.yaml has been imported into a config entry and can safely be removed."
+    }
+  }
+}
