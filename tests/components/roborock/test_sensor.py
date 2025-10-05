@@ -6,10 +6,6 @@ import pytest
 from roborock import DeviceData, HomeDataDevice
 from roborock.const import (
     CLEANING_BRUSH_REPLACE_TIME,
-    FILTER_REPLACE_TIME,
-    MAIN_BRUSH_REPLACE_TIME,
-    SENSOR_DIRTY_REPLACE_TIME,
-    SIDE_BRUSH_REPLACE_TIME,
     STRAINER_REPLACE_TIME,
 )
 from roborock.roborock_message import RoborockMessage, RoborockMessageProtocol
@@ -35,14 +31,21 @@ async def test_sensors(hass: HomeAssistant, setup_entry: MockConfigEntry) -> Non
     assert hass.states.get("sensor.roborock_s7_maxv_main_brush_time_left").state == str(
         MAIN_BRUSH_REPLACE_TIME - 74382
     )
-    assert hass.states.get("sensor.roborock_s7_maxv_side_brush_time_left").state == str(
-        SIDE_BRUSH_REPLACE_TIME - 74382
+    assert (
+        hass.states.get("sensor.roborock_s7_maxv_main_brush_time_left").state
+        == "279.338333333333"
     )
-    assert hass.states.get("sensor.roborock_s7_maxv_filter_time_left").state == str(
-        FILTER_REPLACE_TIME - 74382
+    assert (
+        hass.states.get("sensor.roborock_s7_maxv_side_brush_time_left").state
+        == "179.338333333333"
     )
-    assert hass.states.get("sensor.roborock_s7_maxv_sensor_time_left").state == str(
-        SENSOR_DIRTY_REPLACE_TIME - 74382
+    assert (
+        hass.states.get("sensor.roborock_s7_maxv_filter_time_left").state
+        == "129.338333333333"
+    )
+    assert (
+        hass.states.get("sensor.roborock_s7_maxv_sensor_time_left").state
+        == "9.33833333333333"
     )
     assert hass.states.get(
         "sensor.roborock_s7_2_dock_maintenance_brush_time_left"
@@ -51,9 +54,10 @@ async def test_sensors(hass: HomeAssistant, setup_entry: MockConfigEntry) -> Non
         STRAINER_REPLACE_TIME - 65
     )
 
-    assert hass.states.get("sensor.roborock_s7_maxv_cleaning_time").state == "1176"
+    assert hass.states.get("sensor.roborock_s7_maxv_cleaning_time").state == "19.6"
     assert (
-        hass.states.get("sensor.roborock_s7_maxv_total_cleaning_time").state == "74382"
+        hass.states.get("sensor.roborock_s7_maxv_total_cleaning_time").state
+        == "20.6616666666667"
     )
     assert hass.states.get("sensor.roborock_s7_maxv_status").state == "charging"
     assert (
@@ -78,10 +82,13 @@ async def test_sensors(hass: HomeAssistant, setup_entry: MockConfigEntry) -> Non
     )
     assert hass.states.get("sensor.dyad_pro_status").state == "drying"
     assert hass.states.get("sensor.dyad_pro_battery").state == "100"
-    assert hass.states.get("sensor.dyad_pro_filter_time_left").state == "111"
-    assert hass.states.get("sensor.dyad_pro_roller_left").state == "222"
+    assert (
+        hass.states.get("sensor.dyad_pro_filter_time_left").state
+        == "0.0308333333333333"
+    )
+    assert hass.states.get("sensor.dyad_pro_roller_left").state == "0.0616666666666667"
     assert hass.states.get("sensor.dyad_pro_error").state == "none"
-    assert hass.states.get("sensor.dyad_pro_total_cleaning_time").state == "213"
+    assert hass.states.get("sensor.dyad_pro_total_cleaning_time").state == "3.55"
     assert hass.states.get("sensor.zeo_one_state").state == "drying"
     assert hass.states.get("sensor.zeo_one_countdown").state == "0"
     assert hass.states.get("sensor.zeo_one_washing_left").state == "253"
@@ -109,8 +116,9 @@ async def test_listener_update(
             ]
         )
     # Test consumable
-    assert hass.states.get("sensor.roborock_s7_maxv_filter_time_left").state == str(
-        FILTER_REPLACE_TIME - 74382
+    assert (
+        hass.states.get("sensor.roborock_s7_maxv_filter_time_left").state
+        == "129.338333333333"
     )
     with patch("roborock.version_1_apis.AttributeCache.value", CONSUMABLE.as_dict()):
         client.on_message_received(
@@ -122,6 +130,7 @@ async def test_listener_update(
             ]
         )
     await hass.async_block_till_done()
-    assert hass.states.get("sensor.roborock_s7_maxv_filter_time_left").state == str(
-        FILTER_REPLACE_TIME - 743
+    assert (
+        hass.states.get("sensor.roborock_s7_maxv_filter_time_left").state
+        == "149.793611111111"
     )
