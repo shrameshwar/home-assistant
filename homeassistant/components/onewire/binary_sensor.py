@@ -41,6 +41,14 @@ class OneWireBinarySensorEntityDescription(
 
 
 DEVICE_BINARY_SENSORS: dict[str, tuple[OneWireBinarySensorEntityDescription, ...]] = {
+    "01": (
+        OneWireBinarySensorEntityDescription(
+            key="family",
+            entity_registry_enabled_default=True,
+            translation_key="present",
+            device_class=BinarySensorDeviceClass.PRESENCE,
+        ),
+    ),
     "05": (
         OneWireBinarySensorEntityDescription(
             key="sensed",
