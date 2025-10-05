@@ -1,9 +1,6 @@
-"""Model Context Protocol sessions.
+"""Model Context Protocol sessions."""
 
-A session is a long-lived connection between the client and server that is used
-to exchange messages. The server pushes messages to the client over the session
-and the client sends messages to the server over the session.
-"""
+from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -26,14 +23,10 @@ class Session:
 
 
 class SessionManager:
-    """Manage SSE sessions for the MCP transport layer.
-
-    This class is used to manage the lifecycle of SSE sessions. It is responsible for
-    creating new sessions, resuming existing sessions, and closing sessions.
-    """
+    """Manage SSE sessions for the MCP transport layer."""
 
     def __init__(self) -> None:
-        """Initialize the SSE server transport."""
+        """Initialize the SSE session manager."""
         self._sessions: dict[str, Session] = {}
 
     @asynccontextmanager
@@ -46,8 +39,7 @@ class SessionManager:
             yield session_id
         finally:
             _LOGGER.debug("Closing session: %s", session_id)
-            if session_id in self._sessions:  # close() may have already been called
-                self._sessions.pop(session_id)
+            self._sessions.pop(session_id, None)
 
     def get(self, session_id: str) -> Session | None:
         """Get an existing session."""

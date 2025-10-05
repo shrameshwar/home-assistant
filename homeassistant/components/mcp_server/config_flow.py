@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant import config_entries
 from homeassistant.const import CONF_LLM_HASS_API
 from homeassistant.helpers import llm
 from homeassistant.helpers.selector import (
@@ -16,56 +15,86 @@ from homeassistant.helpers.selector import (
     SelectSelectorConfig,
 )
 
-from .const import DOMAIN
-
-_LOGGER = logging.getLogger(__name__)
+from .const import DOMAIN, TITLE
 
 MORE_INFO_URL = "https://www.home-assistant.io/integrations/mcp_server/#configuration"
 
 
-class ModelContextServerProtocolConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Model Context Protocol Server."""
+class ModelContextServerProtocolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Allow users to select which LLM APIs are exposed through MCP."""
 
     VERSION = 1
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Handle the initial step."""
-        errors: dict[str, str] = {}
+    ) -> config_entries.ConfigFlowResult:
+        """Handle the initial step of the config flow."""
+
         llm_apis = {api.id: api.name for api in llm.async_get_apis(self.hass)}
+        options: list[SelectOptionDict] = [
+            SelectOptionDict(value=api_id, label=name)
+            for api_id, name in llm_apis.items()
+        ]
+        selector = SelectSelector(
+            SelectSelectorConfig(
+                options=options,
+                multiple=True,
+            )
+        )
+
+        default_selection: list[str] | None = None
+        if llm_apis:
+            default_selection = [next(iter(llm_apis))]
+
         if user_input is not None:
-            if not user_input[CONF_LLM_HASS_API]:
-                errors[CONF_LLM_HASS_API] = "llm_api_required"
+            selection = user_input.get(CONF_LLM_HASS_API)
+            if isinstance(selection, str):
+                selection = [selection]
+            elif selection is None:
+                selection = []
+
+            selection = [api_id for api_id in selection if api_id in llm_apis]
+
+            # Only use default selection if user hasn't explicitly provided an empty list
+            if (
+                not selection
+                and user_input.get(CONF_LLM_HASS_API) is None
+                and default_selection is not None
+            ):
+                selection = default_selection.copy()
+
+            if not selection:
+                errors = {CONF_LLM_HASS_API: "llm_api_required"}
             else:
-                return self.async_create_entry(
-                    title=", ".join(
-                        llm_apis[api_id] for api_id in user_input[CONF_LLM_HASS_API]
-                    ),
-                    data=user_input,
+                unique_selection = list(dict.fromkeys(selection))
+                await self.async_set_unique_id(DOMAIN)
+                self._abort_if_unique_id_configured()
+                title = (
+                    llm_apis[unique_selection[0]]
+                    if len(unique_selection) == 1
+                    else TITLE
                 )
+                return self.async_create_entry(
+                    title=title, data={CONF_LLM_HASS_API: unique_selection}
+                )
+        else:
+            errors = {}
+
+        if not llm_apis:
+            errors = {CONF_LLM_HASS_API: "llm_api_required"}
+
+        schema_default = (
+            vol.UNDEFINED if default_selection is None else default_selection
+        )
+        data_schema = vol.Schema(
+            {
+                vol.Required(CONF_LLM_HASS_API, default=schema_default): selector,
+            }
+        )
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Optional(
-                        CONF_LLM_HASS_API,
-                        default=[llm.LLM_API_ASSIST],
-                    ): SelectSelector(
-                        SelectSelectorConfig(
-                            options=[
-                                SelectOptionDict(
-                                    label=name,
-                                    value=llm_api_id,
-                                )
-                                for llm_api_id, name in llm_apis.items()
-                            ],
-                            multiple=True,
-                        )
-                    ),
-                }
-            ),
-            description_placeholders={"more_info_url": MORE_INFO_URL},
+            data_schema=data_schema,
             errors=errors,
+            description_placeholders={"more_info_url": MORE_INFO_URL},
         )

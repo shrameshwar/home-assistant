@@ -2,6 +2,6 @@
 
 from homeassistant.config_entries import ConfigEntry
 
-from .session import SessionManager
+from .runtime import MCPServerRuntime
 
-type MCPServerConfigEntry = ConfigEntry[SessionManager]
+MCPServerConfigEntry = ConfigEntry[MCPServerRuntime]
