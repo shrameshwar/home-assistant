@@ -5,8 +5,11 @@ from __future__ import annotations
 from typing import Any, cast
 
 from chip.clusters import Objects as clusters
+from chip.clusters.Types import Nullable
 from matter_server.client.models import device_types
+from matter_server.common.errors import MatterError
 from matter_server.common.helpers.util import create_attribute_path_from_attribute
+import voluptuous as vol
 
 from homeassistant.components.water_heater import (
     STATE_ECO,
@@ -23,9 +26,12 @@ from homeassistant.const import (
     Platform,
     UnitOfTemperature,
 )
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant, SupportsResponse, callback
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
+from .const import SERVICE_WATER_HEATER_BOOST, SERVICE_WATER_HEATER_CANCEL_BOOST
 from .entity import MatterEntity
 from .helpers import get_matter
 from .models import MatterDiscoverySchema
@@ -49,6 +55,28 @@ async def async_setup_entry(
     matter = get_matter(hass)
     matter.register_platform_handler(Platform.WATER_HEATER, async_add_entities)
 
+    platform = entity_platform.async_get_current_platform()
+    platform.async_register_entity_service(
+        SERVICE_WATER_HEATER_BOOST,
+        schema={
+            # duration >=1
+            vol.Required("duration"): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Optional("emergency_boost"): cv.boolean,
+            vol.Optional("temporary_setpoint"): vol.All(
+                vol.Coerce(int), vol.Range(min=30, max=65)
+            ),
+        },
+        func="async_set_boost",
+        supports_response=SupportsResponse.NONE,
+    )
+
+    platform.async_register_entity_service(
+        SERVICE_WATER_HEATER_CANCEL_BOOST,
+        schema={},
+        func="async_cancel_boost",
+        supports_response=SupportsResponse.NONE,
+    )
+
 
 class MatterWaterHeater(MatterEntity, WaterHeaterEntity):
     """Representation of a Matter WaterHeater entity."""
@@ -68,7 +96,45 @@ class MatterWaterHeater(MatterEntity, WaterHeaterEntity):
     )
     _attr_target_temperature: float | None = None
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    duration = 3600  # 1 hour
     _platform_translation_key = "water_heater"
+
+    async def async_cancel_boost(self) -> None:
+        """Cancel boost."""
+        try:
+            await self.send_device_command(
+                clusters.WaterHeaterManagement.Commands.CancelBoost()
+            )
+        except MatterError as err:
+            raise HomeAssistantError(
+                f"Error sending CancelBoost command: {err}"
+            ) from err
+        self._update_from_device()
+
+    async def async_set_boost(
+        self,
+        duration: int,
+        emergency_boost: bool = False,
+        temporary_setpoint: int = Nullable,
+    ) -> None:
+        """Set boost."""
+        self.duration = duration
+        boost_info: type[
+            clusters.WaterHeaterManagement.Structs.WaterHeaterBoostInfoStruct
+        ] = clusters.WaterHeaterManagement.Structs.WaterHeaterBoostInfoStruct(
+            duration=self.duration,
+            emergencyBoost=emergency_boost,
+            temporarySetpoint=temporary_setpoint * TEMPERATURE_SCALING_FACTOR
+            if temporary_setpoint is not Nullable
+            else Nullable,
+        )
+        try:
+            await self.send_device_command(
+                clusters.WaterHeaterManagement.Commands.Boost(boostInfo=boost_info)
+            )
+        except MatterError as err:
+            raise HomeAssistantError(f"Error sending Boost command: {err}") from err
+        self._update_from_device()
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""
@@ -90,7 +156,7 @@ class MatterWaterHeater(MatterEntity, WaterHeaterEntity):
         boost_info: type[
             clusters.WaterHeaterManagement.Structs.WaterHeaterBoostInfoStruct
         ] = clusters.WaterHeaterManagement.Structs.WaterHeaterBoostInfoStruct(
-            duration=3600
+            duration=self.duration
         )
         system_mode_value = WATER_HEATER_SYSTEM_MODE_MAP[operation_mode]
         await self.write_attribute(

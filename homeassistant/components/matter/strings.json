@@ -560,6 +560,28 @@
           "description": "The Matter device to add to the other Matter network."
         }
       }
+    },
+    "water_heater_boost": {
+      "name": "Open commissioning window",
+      "description": "Water heater boost for a specific duration.",
+      "fields": {
+        "duration": {
+          "name": "Duration",
+          "description": "Boost duration"
+        },
+        "emergency_boost": {
+          "name": "Emergency boost",
+          "description": "Whether to enable emergency boost mode."
+        },
+        "temporary_setpoint": {
+          "name": "Temporary setpoint",
+          "description": "Temporary setpoint temperature in Celsius during the boost period."
+        }
+      }
+    },
+    "water_heater_cancel_boost": {
+      "name": "Cancel water heater boost",
+      "description": "Cancel an ongoing water heater boost."
     }
   }
 }

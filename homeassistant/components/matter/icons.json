@@ -153,5 +153,13 @@
         "default": "mdi:shield-lock"
       }
     }
+  },
+  "services": {
+    "water_heater_boost": {
+      "service": "mdi:water-boiler"
+    },
+    "water_heater_cancel_boost": {
+      "service": "mdi:water-boiler-off"
+    }
   }
 }
