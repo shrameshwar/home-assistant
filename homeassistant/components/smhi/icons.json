@@ -21,6 +21,37 @@
       },
       "frozen_precipitation": {
         "default": "mdi:weather-snowy-rainy"
+      },
+
+      "fwiindex": {
+        "default": "mdi:pine-tree-fire"
+      },
+      "fwi": {
+        "default": "mdi:pine-tree-fire"
+      },
+      "isi": {
+        "default": "mdi:grass"
+      },
+      "bui": {
+        "default": "mdi:grass"
+      },
+      "ffmc": {
+        "default": "mdi:grass"
+      },
+      "dmc": {
+        "default": "mdi:grass"
+      },
+      "dc": {
+        "default": "mdi:grass"
+      },
+      "grassfire": {
+        "default": "mdi:fire-circle"
+      },
+      "rn": {
+        "default": "mdi:grass"
+      },
+      "forestdry": {
+        "default": "mdi:forest"
       }
     }
   }
