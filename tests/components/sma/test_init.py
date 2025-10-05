@@ -20,7 +20,7 @@ async def test_migrate_entry_minor_version_1_2(
     entry = MockConfigEntry(
         domain=DOMAIN,
         title=MOCK_DEVICE["name"],
-        unique_id=MOCK_DEVICE["serial"],  # Not converted to str
+        unique_id=str(MOCK_DEVICE["serial"]),
         data=MOCK_USER_INPUT,
         source=SOURCE_IMPORT,
         minor_version=1,
