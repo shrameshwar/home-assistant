@@ -367,6 +367,26 @@ DISCOVERY_SCHEMAS = [
     MatterDiscoverySchema(
         platform=Platform.NUMBER,
         entity_description=MatterNumberEntityDescription(
+            key="speaker_setpoint",
+            translation_key="speaker_setpoint",
+            native_unit_of_measurement=PERCENTAGE,
+            native_max_value=100,
+            native_min_value=0,
+            native_step=1,
+            device_to_ha=lambda x: None
+            if x is None
+            # round to integer percentage,
+            else round(min(x, 254) / 2.54),  # Matter range (0-254, capped at 254)
+            ha_to_device=lambda x: round(x * 2.54),  # HA range 0–100%
+            mode=NumberMode.SLIDER,
+        ),
+        entity_class=MatterLevelControlNumber,
+        required_attributes=(clusters.LevelControl.Attributes.CurrentLevel,),
+        device_type=(device_types.Speaker,),
+    ),
+    MatterDiscoverySchema(
+        platform=Platform.NUMBER,
+        entity_description=MatterNumberEntityDescription(
             key="AutoRelockTimer",
             entity_category=EntityCategory.CONFIG,
             translation_key="auto_relock_timer",
