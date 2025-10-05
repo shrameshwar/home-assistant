@@ -590,7 +590,7 @@ async def test_rpc_sleeping_sensor(
         hass,
         SENSOR_DOMAIN,
         "test_name_temperature",
-        "temperature:0-temperature_0",
+        "temperature:0-temperature_tc",
         entry,
     )
 
@@ -621,7 +621,7 @@ async def test_rpc_restored_sleeping_sensor(
         hass,
         SENSOR_DOMAIN,
         "test_name_temperature",
-        "temperature:0-temperature_0",
+        "temperature:0-temperature_tc",
         entry,
         device_id=device.id,
     )
@@ -662,7 +662,7 @@ async def test_rpc_restored_sleeping_sensor_no_last_state(
         hass,
         SENSOR_DOMAIN,
         "test_name_temperature",
-        "temperature:0-temperature_0",
+        "temperature:0-temperature_tc",
         entry,
         device_id=device.id,
     )
@@ -769,7 +769,7 @@ async def test_rpc_sleeping_update_entity_service(
     assert state.state == "22.9"
 
     assert (entry := entity_registry.async_get(entity_id))
-    assert entry.unique_id == "123456789ABC-temperature:0-temperature_0"
+    assert entry.unique_id == "123456789ABC-temperature:0-temperature_tc"
 
     assert (
         "Entity sensor.test_name_temperature comes from a sleeping device"
